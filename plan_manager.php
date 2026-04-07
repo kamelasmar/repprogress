@@ -26,10 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active, user_id) VALUES (?,?,?,?,?,?,0,?)")
            ->execute([$_POST['name'], $_POST['description'], $_POST['phase_number'], $_POST['weeks_duration'], $start, $end, $uid]);
         $new_id = $db->lastInsertId();
-        // Seed blank days
-        $days = [['Day 1','Lower Body',1,'Tue'],['Day 2','Push',2,'Wed'],['Day 3','Pull',3,'Fri'],['Day 4','Arms & Functional',4,'Sat'],['Day 5','Full Body + Mobility',5,'Mon']];
-        $dst = $db->prepare("INSERT INTO plan_days (plan_id,day_label,day_title,day_order,week_day) VALUES (?,?,?,?,?)");
-        foreach ($days as [$dl,$dt,$do,$wd]) $dst->execute([$new_id,$dl,$dt,$do,$wd]);
+        // Seed days based on selected count
+        $num_days = max(1, min(7, (int)($_POST['num_days'] ?? 3)));
+        $dst = $db->prepare("INSERT INTO plan_days (plan_id,day_label,day_title,day_order) VALUES (?,?,?,?)");
+        for ($i = 1; $i <= $num_days; $i++) {
+            $dst->execute([$new_id, "Day $i", "Training Day $i", $i]);
+        }
         flash('Plan created! Use the builder to add exercises.');
         header("Location: plan_builder.php?plan_id=$new_id"); exit;
     }
@@ -177,7 +179,15 @@ render_head('Plans', 'plans');
         <label>Plan Name</label>
         <input type="text" name="name" placeholder="Phase 2 — Loading" required>
       </div>
-      <div class="form-row form-row-2">
+      <div class="form-row form-row-3">
+        <div>
+          <label>Training Days</label>
+          <select name="num_days">
+            <?php for ($d=1; $d<=7; $d++): ?>
+            <option value="<?= $d ?>" <?= $d===3?'selected':'' ?>><?= $d ?> day<?= $d>1?'s':'' ?></option>
+            <?php endfor; ?>
+          </select>
+        </div>
         <div>
           <label>Phase #</label>
           <input type="number" name="phase_number" value="<?= count($plans)+1 ?>" min="1">

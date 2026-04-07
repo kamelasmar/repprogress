@@ -57,7 +57,7 @@ $recent = $st->fetchAll();
 
 $wLabels=array_column($weights,'logged_date'); $wData=array_column($weights,'weight_kg');
 $vLabels=array_column($muscle_vol,'muscle_group'); $vData=array_column($muscle_vol,'volume');
-$day_colors=['Day 1'=>'#639922','Day 2'=>'#378ADD','Day 3'=>'#D4537E','Day 4'=>'#BA7517','Day 5'=>'#1D9E75'];
+$day_colors = day_colors();
 
 // Plan progress
 $plan_week=1; $plan_pct=0;

@@ -93,6 +93,11 @@ function send_verification_email(string $email, string $token): bool {
 }
 
 function sendgrid_send(string $to, string $subject, string $text_body): bool {
+    if (!defined('SENDGRID_API_KEY') || !SENDGRID_API_KEY) {
+        error_log('[Repprogress] SendGrid API key not configured');
+        return false;
+    }
+
     $payload = [
         'personalizations' => [['to' => [['email' => $to]]]],
         'from'    => ['email' => MAIL_FROM, 'name' => MAIL_FROM_NAME],
@@ -111,12 +116,22 @@ function sendgrid_send(string $to, string $subject, string $text_body): bool {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 10,
     ]);
-    $response = curl_exec($ch);
-    $code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $response  = curl_exec($ch);
+    $code      = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_err  = curl_error($ch);
     curl_close($ch);
 
-    // SendGrid returns 202 Accepted on success
-    return $code >= 200 && $code < 300;
+    if ($curl_err) {
+        error_log("[Repprogress] SendGrid cURL error: $curl_err");
+        return false;
+    }
+
+    if ($code < 200 || $code >= 300) {
+        error_log("[Repprogress] SendGrid HTTP $code — to: $to — response: $response");
+        return false;
+    }
+
+    return true;
 }
 
 function resend_verification(PDO $db, int $user_id): array {

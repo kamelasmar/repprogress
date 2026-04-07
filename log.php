@@ -6,15 +6,17 @@ require_auth();
 $db  = db();
 $uid = current_user_id();
 
-$day_titles_map = ['Day 1'=>'Lower Body','Day 2'=>'Push','Day 3'=>'Pull','Day 4'=>'Arms & Functional','Day 5'=>'Full Body + Mobility'];
-$day_pill_n     = ['Day 1'=>1,'Day 2'=>2,'Day 3'=>3,'Day 4'=>4,'Day 5'=>5];
+$all_colors = day_colors();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'create_session') {
         $ap = active_plan();
-        $dt = $day_titles_map[$_POST['day_label']] ?? $_POST['day_label'];
+        // Look up day title from plan_days
+        $dt_st = $db->prepare("SELECT day_title FROM plan_days WHERE plan_id=? AND day_label=?");
+        $dt_st->execute([$ap['id'] ?? 0, $_POST['day_label']]);
+        $dt = $dt_st->fetchColumn() ?: $_POST['day_label'];
         $db->prepare("INSERT INTO sessions (session_date,day_label,title,plan_id,duration_min,notes,user_id) VALUES (?,?,?,?,?,?,?)")
            ->execute([$_POST['session_date'],$_POST['day_label'],$dt,$ap['id']??null,$_POST['duration_min']?:null,$_POST['notes']?:null,$uid]);
         $sid = $db->lastInsertId();
@@ -50,10 +52,14 @@ $ap = active_plan();
 
 // Pull exercises from the ACTIVE PLAN for the selected day
 $plan_days_list = [];
+$day_titles_map = [];
 if ($ap) {
     $pdq = $db->prepare("SELECT * FROM plan_days WHERE plan_id=? ORDER BY day_order");
     $pdq->execute([$ap['id']]);
     $plan_days_list = $pdq->fetchAll();
+    foreach ($plan_days_list as $pd) {
+        $day_titles_map[$pd['day_label']] = $pd['day_title'];
+    }
 }
 
 // Group plan exercises by day for the set-log selector
@@ -95,7 +101,7 @@ $st_sessions = $db->prepare("
 $st_sessions->execute([$uid]);
 $all_sessions = $st_sessions->fetchAll();
 
-$day_colors = ['Day 1'=>'#639922','Day 2'=>'#378ADD','Day 3'=>'#D4537E','Day 4'=>'#BA7517','Day 5'=>'#1D9E75'];
+$day_colors = $all_colors;
 
 render_head('Log Workout','log');
 ?>
@@ -161,7 +167,7 @@ render_head('Log Workout','log');
     <?php if ($all_sessions): ?>
     <div>
     <?php foreach ($all_sessions as $s):
-      $pn  = $day_pill_n[$s['day_label']] ?? 1;
+      $pn  = (int)preg_replace('/\D/', '', $s['day_label']);
       $col = $day_colors[$s['day_label']] ?? '#888';
       $isA = $s['id'] == $session_id;
     ?>
@@ -187,8 +193,8 @@ render_head('Log Workout','log');
 <!-- Main panel -->
 <div>
 <?php if ($session):
-  $pn  = $day_pill_n[$session['day_label']] ?? 1;
-  $dt  = $day_titles_map[$session['day_label']] ?? '';
+  $pn  = (int)preg_replace('/\D/', '', $session['day_label']);
+  $dt  = $day_titles_map[$session['day_label']] ?? $session['title'];
   // Get the plan exercises for this session's day (from the session's plan)
   $sess_plan_id = $session['plan_id'];
   $sess_plan_exs = [];

@@ -4,7 +4,7 @@ function render_head(string $title, string $active = '', bool $auth_page = false
         'index'    => ['Dashboard',   'index.php',    '&#128202;'],
         'log'      => ['Log',         'log.php',      '&#127947;&#65039;'],
         'weight'   => ['Body',      'weight.php',   '&#9878;&#65039;'],
-        'exercises'=> ['Programme',   'exercises.php', '&#128203;'],
+        'exercises'=> ['Exercises',   'exercises.php', '&#128203;'],
         'schedule' => ['Schedule',    'schedule.php',  '&#128197;'],
     ];
     ?>
@@ -241,6 +241,8 @@ img { max-width: 100%; }
 .day-pill-3 { background: rgba(212,83,126,0.15); color: #f07faa; }
 .day-pill-4 { background: var(--warn-dim);   color: var(--warn-text); }
 .day-pill-5 { background: var(--accent-dim); color: var(--accent-text); }
+.day-pill-6 { background: rgba(139,92,246,0.15); color: #a78bfa; }
+.day-pill-7 { background: var(--red-dim); color: var(--red-text); }
 
 /* ── Forms ──────────────────────────────────────────────────── */
 label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
@@ -424,7 +426,7 @@ function render_foot(bool $auth_page = false): void {
       'index'    => ['Dashboard', 'index.php',    '&#128202;'],
       'log'      => ['Log',       'log.php',      '&#127947;&#65039;'],
       'weight'   => ['Body',    'weight.php',   '&#9878;&#65039;'],
-      'exercises'=> ['Programme', 'exercises.php', '&#128203;'],
+      'exercises'=> ['Exercises', 'exercises.php', '&#128203;'],
       'schedule' => ['Schedule',  'schedule.php',  '&#128197;'],
   ];
   // Detect active page from current script
@@ -464,6 +466,15 @@ if (typeof Chart !== 'undefined') {
 function day_pill(string $day_label): string {
     $n = preg_replace('/\D/','',$day_label);
     return '<span class="day-pill day-pill-'.$n.'">'.$day_label.'</span>';
+}
+
+function day_colors(): array {
+    $palette = ['#639922','#378ADD','#D4537E','#BA7517','#1D9E75','#8B5CF6','#E05C5C'];
+    $colors = [];
+    for ($i = 1; $i <= 7; $i++) {
+        $colors["Day $i"] = $palette[$i - 1];
+    }
+    return $colors;
 }
 
 function active_plan(): ?array {

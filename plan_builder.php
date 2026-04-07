@@ -108,7 +108,7 @@ $ex_by_mg = [];
 foreach ($all_ex as $e) $ex_by_mg[$e['muscle_group']][] = $e;
 
 $sections = ['Cardio Warm-Up','Hip Mobility','Core Block A','Activation','Main Work','Functional','Finisher','Core Block B','Cool-Down','Reset'];
-$day_pill_n = ['Day 1'=>1,'Day 2'=>2,'Day 3'=>3,'Day 4'=>4,'Day 5'=>5];
+// Day pill numbers derived dynamically from label
 
 render_head('Plan Builder — '.$plan['name'], 'plans');
 ?>
@@ -134,7 +134,7 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
 <!-- Day tabs -->
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">
   <?php foreach ($plan_days as $pd):
-    $pn = $day_pill_n[$pd['day_label']] ?? 1;
+    $pn = (int)preg_replace('/\D/', '', $pd['day_label']);
     $isActive = $pd['day_label'] === $active_day;
   ?>
   <a href="plan_builder.php?plan_id=<?= $plan_id ?>&day=<?= urlencode($pd['day_label']) ?>"
