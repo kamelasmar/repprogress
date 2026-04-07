@@ -147,9 +147,8 @@ function openai_api_key_configured(): bool {
 function contains_profanity(string $text): bool {
     $words = ['fuck','shit','ass','bitch','damn','crap','dick','pussy','cock',
               'bastard','slut','whore','nigger','faggot','retard','cunt'];
-    $lower = strtolower($text);
     foreach ($words as $w) {
-        if (str_contains($lower, $w)) return true;
+        if (preg_match('/\b' . preg_quote($w, '/') . '\b/i', $text)) return true;
     }
     return false;
 }
@@ -180,9 +179,13 @@ function call_openai(string $system_prompt, string $user_prompt): ?array {
     ]);
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
     curl_close($ch);
 
-    if ($http_code !== 200 || !$response) return null;
+    if ($http_code !== 200 || !$response) {
+        error_log('call_openai failed: HTTP ' . $http_code . ' curl_error=' . $curl_error);
+        return null;
+    }
 
     $data = json_decode($response, true);
     $content = $data['choices'][0]['message']['content'] ?? null;
@@ -200,13 +203,13 @@ function match_exercise(PDO $db, string $name, string $muscle_group, ?string $co
     $coach_tip = $coach_tip ? sanitize_ai_text($coach_tip) : null;
 
     // 1. Exact match (case-insensitive)
-    $st = $db->prepare("SELECT id FROM exercises WHERE LOWER(name) = LOWER(?) LIMIT 1");
+    $st = $db->prepare("SELECT id FROM exercises WHERE LOWER(name) = LOWER(?) AND status='approved' LIMIT 1");
     $st->execute([$name]);
     $row = $st->fetch();
     if ($row) return (int)$row['id'];
 
     // 2. Fuzzy match — partial LIKE, pick shortest name
-    $st = $db->prepare("SELECT id, name FROM exercises WHERE LOWER(name) LIKE LOWER(?) ORDER BY CHAR_LENGTH(name) ASC LIMIT 1");
+    $st = $db->prepare("SELECT id, name FROM exercises WHERE LOWER(name) LIKE LOWER(?) AND status='approved' ORDER BY CHAR_LENGTH(name) ASC LIMIT 1");
     $st->execute(['%' . $name . '%']);
     $row = $st->fetch();
     if ($row) return (int)$row['id'];
