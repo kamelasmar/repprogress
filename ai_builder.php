@@ -37,6 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ai_builder.php'); exit;
         }
 
+        // Length check on details
+        if ($form['details'] && mb_strlen($form['details']) > 500) {
+            flash('Additional details must be under 500 characters.', 'error');
+            $_SESSION['ai_form'] = $form;
+            header('Location: ai_builder.php'); exit;
+        }
+
         // Profanity check on user text
         if (contains_profanity($form['plan_name']) || ($form['details'] && contains_profanity($form['details']))) {
             flash('Please remove inappropriate language.', 'error');
@@ -60,7 +67,7 @@ RULES:
 - Return ONLY a valid JSON object. No markdown, no commentary, no medical advice.
 - Use neutral, professional language in all exercise names and coach tips.
 - Prefer exercises from the EXISTING LIBRARY below when they fit. You may create new exercises when needed.
-- Each day must have sections (e.g. "Warm-Up", "Main Work", "Cool-Down"). Use sections appropriate to the goal.
+- Each day must have sections. Use ONLY from this list: "Cardio Warm-Up", "Mobility", "Stretching", "Core Block A", "Activation", "Main Work", "Functional", "Finisher", "Core Block B", "Cool-Down", "Reset".
 - Sets must be an integer. Reps can be a string like "10-12" or "30 sec" or "5 each side".
 - Coach tips should be one sentence, focused on form cues.
 
@@ -131,8 +138,8 @@ PROMPT;
         // Match exercises and build preview data
         $preview_days = [];
         foreach ($result['days'] as $i => $day) {
-            $day_label = sanitize_ai_text($day['day_label'] ?? ('Day ' . ($i + 1)));
-            $day_title = sanitize_ai_text($day['day_title'] ?? ('Training Day ' . ($i + 1)));
+            $day_label = mb_substr(sanitize_ai_text($day['day_label'] ?? ('Day ' . ($i + 1))), 0, 20);
+            $day_title = mb_substr(sanitize_ai_text($day['day_title'] ?? ('Training Day ' . ($i + 1))), 0, 60);
             $sections = [];
             foreach (($day['sections'] ?? []) as $sec) {
                 $sec_name = sanitize_ai_text($sec['name'] ?? 'Main Work');
@@ -245,7 +252,7 @@ PROMPT;
 
 // ── Determine which step to show ────────────────────────────────────────────
 $step = $_GET['step'] ?? 'form';
-$form = $_SESSION['ai_form'] ?? [];
+$form = $_SESSION['ai_form'] ?? ($_SESSION['ai_preview']['form'] ?? []);
 // Clear form session after reading
 if ($step === 'form') unset($_SESSION['ai_preview']);
 
@@ -334,7 +341,7 @@ render_head('AI Workout Builder', 'plans');
 
     <div class="form-group">
       <label>Additional Details <span style="font-weight:400;color:var(--muted2)">(optional)</span></label>
-      <textarea name="details" rows="3" placeholder="e.g. Bad left knee, prefer dumbbells over barbells, want extra hip mobility work..."><?= htmlspecialchars($form['details'] ?? '') ?></textarea>
+      <textarea name="details" rows="3" maxlength="500" placeholder="e.g. Bad left knee, prefer dumbbells over barbells, want extra hip mobility work..."><?= htmlspecialchars($form['details'] ?? '') ?></textarea>
     </div>
 
     <div style="display:flex;gap:10px;align-items:center">
@@ -368,7 +375,7 @@ document.getElementById('ai-form').addEventListener('submit', function() {
 <?php foreach ($pdays as $d_idx => $day): ?>
 <div class="card" style="margin-bottom:1rem">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer" onclick="this.parentElement.querySelector('.day-content').classList.toggle('collapsed')">
-    <?= day_pill(htmlspecialchars($day['day_label'])) ?>
+    <?= day_pill($day['day_label']) ?>
     <span style="font-size:16px;font-weight:700;color:var(--text)"><?= htmlspecialchars($day['day_title']) ?></span>
   </div>
   <div class="day-content">
