@@ -51,7 +51,7 @@ render_head('Verify Email', '', true);
 
 <div class="auth-box">
   <div style="text-align:center;margin-bottom:2rem">
-    <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px">FitTracker</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Repprogress</div>
     <div style="color:var(--muted);font-size:14px;margin-top:4px">Verify your email</div>
   </div>
 

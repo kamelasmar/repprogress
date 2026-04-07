@@ -11,8 +11,8 @@ define('DB_CHARSET', 'utf8mb4');
 
 // ── Email / App Configuration ─────────────────────────────────────────────────
 define('MAIL_FROM',      'noreply@yourdomain.com');
-define('MAIL_FROM_NAME', 'FitTracker');
-define('APP_URL',        'https://yourdomain.com/fittrack'); // no trailing slash
+define('MAIL_FROM_NAME', 'Repprogress');
+define('APP_URL',        'https://yourdomain.com/repprogress'); // no trailing slash
 
 // ── Session Security ──────────────────────────────────────────────────────────
 ini_set('session.cookie_httponly', 1);

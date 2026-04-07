@@ -112,7 +112,7 @@ define('DB_CHARSET', 'utf8mb4');
 
 // ── Email / App Configuration ─────────────────────────────────────────────────
 define('MAIL_FROM',      '%MAIL%');
-define('MAIL_FROM_NAME', 'FitTracker');
+define('MAIL_FROM_NAME', 'Repprogress');
 define('APP_URL',        '%URL%');
 
 // ── Session Security ──────────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ CONFIGTPL;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Install — FitTracker</title>
+<title>Install — Repprogress</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f7f4;color:#1a1916;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:2rem;}
@@ -288,13 +288,13 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
     <div class="warn-box" style="margin-top:1rem">
       <strong>Security:</strong> Delete <code>install.php</code> once you're done.
     </div>
-    <a href="login.php" class="go">Sign in to FitTracker</a>
+    <a href="login.php" class="go">Sign in to Repprogress</a>
   </div>
 
 <?php elseif($step === 'admin'): ?>
 
   <h1>Create Admin Account</h1>
-  <p class="tagline">Set up the administrator account for FitTracker</p>
+  <p class="tagline">Set up the administrator account for Repprogress</p>
 
   <?php if($log): ?>
   <div class="ok" style="margin-bottom:1.25rem">
@@ -335,7 +335,7 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
 
 <?php else: ?>
 
-  <h1>FitTracker</h1>
+  <h1>Repprogress</h1>
   <p class="tagline">One-time installer — fill in the credentials your hosting gave you</p>
 
   <?php if($errors): ?>
@@ -374,13 +374,13 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
       <label>Database Name <span class="label-hint">exactly as shown in cPanel</span></label>
       <input type="text" name="db_name"
         value="<?= htmlspecialchars($_POST['db_name']??'') ?>"
-        placeholder="e.g. fittrack" required>
+        placeholder="e.g. repprogress" required>
     </div>
     <div class="field">
       <label>Database Username</label>
       <input type="text" name="db_user"
         value="<?= htmlspecialchars($_POST['db_user']??'') ?>"
-        placeholder="e.g. fittrack_user" required>
+        placeholder="e.g. repprogress_user" required>
     </div>
     <div class="field">
       <label>Database Password</label>
@@ -399,7 +399,7 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
         <label>App URL <span class="label-hint">no trailing slash</span></label>
         <input type="url" name="app_url"
           value="<?= htmlspecialchars($_POST['app_url']??'') ?>"
-          placeholder="https://yourdomain.com/fittrack">
+          placeholder="https://yourdomain.com/repprogress">
       </div>
     </div>
 

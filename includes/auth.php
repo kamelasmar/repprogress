@@ -82,8 +82,8 @@ function verify_email(PDO $db, string $token): array {
 
 function send_verification_email(string $email, string $token): bool {
     $link    = APP_URL . '/verify.php?token=' . urlencode($token);
-    $subject = 'Verify your FitTracker account';
-    $body    = "Welcome to FitTracker!\n\n"
+    $subject = 'Verify your Repprogress account';
+    $body    = "Welcome to Repprogress!\n\n"
              . "Click the link below to verify your email address:\n\n"
              . $link . "\n\n"
              . "This link expires in 24 hours.\n\n"

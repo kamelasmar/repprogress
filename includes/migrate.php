@@ -106,4 +106,15 @@ function run_migrations(PDO $db): void {
     if (!in_array('is_suggested', $ecols)) {
         try { $db->exec("ALTER TABLE exercises ADD COLUMN is_suggested TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
     }
+
+    // ── Add body composition columns to weight_log ──────────────────
+    try {
+        $wcols = $db->query("SHOW COLUMNS FROM weight_log")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('body_fat_pct', $wcols)) {
+            $db->exec("ALTER TABLE weight_log ADD COLUMN body_fat_pct DECIMAL(4,1) DEFAULT NULL");
+        }
+        if (!in_array('muscle_mass_pct', $wcols)) {
+            $db->exec("ALTER TABLE weight_log ADD COLUMN muscle_mass_pct DECIMAL(4,1) DEFAULT NULL");
+        }
+    } catch (Exception $e) {}
 }

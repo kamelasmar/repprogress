@@ -1,8 +1,8 @@
--- Kamel's Workout Tracker — Versioned Plan Schema
+-- Repprogress — Versioned Plan Schema
 -- Run via install.php (browser installer)
 
-CREATE DATABASE IF NOT EXISTS fittrack CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE fittrack;
+CREATE DATABASE IF NOT EXISTS repprogress CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE repprogress;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS sets_log;

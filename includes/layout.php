@@ -3,7 +3,7 @@ function render_head(string $title, string $active = '', bool $auth_page = false
     $pages = [
         'index'    => ['Dashboard',   'index.php',    '&#128202;'],
         'log'      => ['Log',         'log.php',      '&#127947;&#65039;'],
-        'weight'   => ['Weight',      'weight.php',   '&#9878;&#65039;'],
+        'weight'   => ['Body',      'weight.php',   '&#9878;&#65039;'],
         'exercises'=> ['Programme',   'exercises.php', '&#128203;'],
         'schedule' => ['Schedule',    'schedule.php',  '&#128197;'],
     ];
@@ -15,7 +15,7 @@ function render_head(string $title, string $active = '', bool $auth_page = false
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f0f0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title><?= htmlspecialchars($title) ?> — FitTracker</title>
+<title><?= htmlspecialchars($title) ?> — Repprogress</title>
 <?php if (!$auth_page): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <?php endif; ?>
@@ -384,7 +384,7 @@ else: ?>
 
 <!-- Desktop sidebar -->
 <aside class="sidebar">
-  <div class="sidebar-brand">Fit<em>Tracker</em></div>
+  <div class="sidebar-brand">Rep<em>progress</em></div>
 
   <div class="nav-section">Menu</div>
   <?php foreach ($pages as $key => [$label, $href, $icon]): ?>
@@ -423,7 +423,7 @@ function render_foot(bool $auth_page = false): void {
   $pages = [
       'index'    => ['Dashboard', 'index.php',    '&#128202;'],
       'log'      => ['Log',       'log.php',      '&#127947;&#65039;'],
-      'weight'   => ['Weight',    'weight.php',   '&#9878;&#65039;'],
+      'weight'   => ['Body',    'weight.php',   '&#9878;&#65039;'],
       'exercises'=> ['Programme', 'exercises.php', '&#128203;'],
       'schedule' => ['Schedule',  'schedule.php',  '&#128197;'],
   ];

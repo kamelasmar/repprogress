@@ -9,12 +9,13 @@ $cu  = current_user();
 
 $ap = active_plan();
 
-$st = $db->prepare("SELECT logged_date,weight_kg FROM weight_log WHERE user_id=? ORDER BY logged_date DESC LIMIT 8");
+$st = $db->prepare("SELECT logged_date, weight_kg, body_fat_pct, muscle_mass_pct FROM weight_log WHERE user_id=? ORDER BY logged_date DESC LIMIT 8");
 $st->execute([$uid]);
 $weights = array_reverse($st->fetchAll());
 $latest_weight = $weights ? (float)end($weights)['weight_kg'] : null;
 $first_weight  = $weights ? (float)$weights[0]['weight_kg'] : null;
 $weight_delta  = ($latest_weight && $first_weight) ? round($latest_weight - $first_weight, 1) : null;
+$latest_fat    = $weights ? (end($weights)['body_fat_pct'] ? (float)end($weights)['body_fat_pct'] : null) : null;
 
 $st = $db->prepare("SELECT COUNT(*) FROM sessions WHERE MONTH(session_date)=MONTH(CURDATE()) AND YEAR(session_date)=YEAR(CURDATE()) AND user_id=?");
 $st->execute([$uid]);
@@ -106,7 +107,8 @@ render_head('Dashboard','index');
 <div class="grid-4">
   <div class="metric"><div class="metric-label">Current Weight</div>
     <div class="metric-value"><?= $latest_weight?number_format($latest_weight,1).' kg':'—' ?></div>
-    <?php if($weight_delta!==null): ?><div class="metric-sub <?= $weight_delta<=0?'metric-up':'metric-down' ?>"><?= $weight_delta>0?'+':'' ?><?= $weight_delta ?> kg since start</div><?php endif; ?>
+    <?php if($latest_fat): ?><div class="metric-sub"><?= number_format($latest_fat,1) ?>% body fat</div>
+    <?php elseif($weight_delta!==null): ?><div class="metric-sub <?= $weight_delta<=0?'metric-up':'metric-down' ?>"><?= $weight_delta>0?'+':'' ?><?= $weight_delta ?> kg since start</div><?php endif; ?>
   </div>
   <div class="metric"><div class="metric-label">Sessions This Month</div>
     <div class="metric-value"><?= $sessions_month ?></div>
@@ -126,7 +128,7 @@ render_head('Dashboard','index');
   <div class="card">
     <div class="card-title">Weight Trend (kg)</div>
     <?php if(count($weights)>=2): ?><canvas id="wChart" height="160"></canvas>
-    <?php else: ?><div class="empty"><p>Log weight to see trend.</p><a href="weight.php" class="btn btn-primary btn-sm">+ Log Weight</a></div><?php endif; ?>
+    <?php else: ?><div class="empty"><p>Log weight to see trend.</p><a href="weight.php" class="btn btn-primary btn-sm">+ Log Body Comp</a></div><?php endif; ?>
   </div>
   <div class="card">
     <div class="card-title">Volume by Muscle Group — last 30 days</div>
@@ -169,7 +171,7 @@ render_head('Dashboard','index');
 
 <div style="display:flex;gap:10px;flex-wrap:wrap">
   <a href="log.php?new=1" class="btn btn-primary">+ Log Workout</a>
-  <a href="weight.php" class="btn btn-ghost">+ Log Weight</a>
+  <a href="weight.php" class="btn btn-ghost">+ Log Body Comp</a>
   <a href="plan_manager.php" class="btn btn-ghost">Plans</a>
   <a href="schedule.php" class="btn btn-ghost">Schedule</a>
 </div>
