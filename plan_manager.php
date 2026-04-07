@@ -182,7 +182,7 @@ render_head('Plans', 'plans');
     <?php if (openai_api_key_configured()): ?>
     <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Choose how to start your new plan:</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
-      <button type="button" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal" onclick="document.getElementById('blank-form').style.display='block';document.getElementById('ai-cta').style.display='none';">
+      <button type="button" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal" onclick="document.getElementById('blank-form').style.display='block';">
         <span style="font-size:20px;display:block;margin-bottom:4px">&#128221;</span>
         <span style="font-weight:700;display:block">Blank Plan</span>
         <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Start from scratch</span>
