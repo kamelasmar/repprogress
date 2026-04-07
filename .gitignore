@@ -1,0 +1,22 @@
+# ── Credentials — NEVER commit this ─────────────────────────────────────────
+includes/config.php
+
+# ── PHP / server artifacts ────────────────────────────────────────────────────
+*.log
+*.cache
+.php_cs.cache
+.phpunit.result.cache
+
+# ── OS junk ───────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor ────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Uploads / user data ───────────────────────────────────────────────────────
+uploads/
