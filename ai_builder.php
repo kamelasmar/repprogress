@@ -193,6 +193,44 @@ PROMPT;
         header('Location: ai_builder.php?step=preview');
         exit;
     }
+
+    if ($action === 'accept') {
+        $preview = $_SESSION['ai_preview'] ?? null;
+        if (!$preview) {
+            flash('No plan to accept. Please generate one first.', 'error');
+            header('Location: ai_builder.php'); exit;
+        }
+
+        $form = $preview['form'];
+        $days = $preview['days'];
+
+        // Create the plan
+        $start = date('Y-m-d');
+        $weeks = 8;
+        $end = date('Y-m-d', strtotime("+{$weeks} weeks"));
+        $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active, user_id) VALUES (?,?,1,?,?,?,0,?)")
+           ->execute([$form['plan_name'], 'AI-generated plan: ' . ucfirst(str_replace('_', ' ', $form['goal'])), $weeks, $start, $end, $uid]);
+        $plan_id = (int)$db->lastInsertId();
+
+        // Create days and exercises
+        foreach ($days as $d_idx => $day) {
+            $db->prepare("INSERT INTO plan_days (plan_id, day_label, day_title, day_order) VALUES (?,?,?,?)")
+               ->execute([$plan_id, $day['day_label'], $day['day_title'], $d_idx + 1]);
+
+            foreach ($day['sections'] as $s_idx => $sec) {
+                foreach ($sec['exercises'] as $e_idx => $ex) {
+                    $exercise_id = match_exercise($db, $ex['name'], $ex['muscle_group'], $ex['coach_tip'], $uid);
+                    $db->prepare("INSERT INTO plan_exercises (plan_id, day_label, exercise_id, section, section_order, sort_order, sets_target, reps_target) VALUES (?,?,?,?,?,?,?,?)")
+                       ->execute([$plan_id, $day['day_label'], $exercise_id, $sec['name'], $s_idx, $e_idx + 1, $ex['sets'], $ex['reps']]);
+                }
+            }
+        }
+
+        unset($_SESSION['ai_preview'], $_SESSION['ai_form']);
+        flash('Plan created! Customise it in the builder.');
+        header("Location: plan_builder.php?plan_id=$plan_id");
+        exit;
+    }
 }
 
 // ── Determine which step to show ────────────────────────────────────────────
@@ -303,6 +341,79 @@ document.getElementById('ai-form').addEventListener('submit', function() {
     btn.textContent = 'Generating your plan...';
 });
 </script>
+
+<?php elseif ($step === 'preview' && isset($_SESSION['ai_preview'])): ?>
+<?php $preview = $_SESSION['ai_preview']; $pform = $preview['form']; $pdays = $preview['days']; ?>
+<!-- ── PREVIEW ────────────────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="page-title">Preview: <?= htmlspecialchars($pform['plan_name']) ?></div>
+  <div class="page-sub">
+    <?= ucfirst(str_replace('_', ' ', $pform['goal'])) ?> &middot;
+    <?= $pform['days_per_week'] ?> days/week &middot;
+    <?= ucfirst($pform['experience']) ?> &middot;
+    <?= $pform['duration'] ?> min sessions
+  </div>
+</div>
+
+<?php foreach ($pdays as $d_idx => $day): ?>
+<div class="card" style="margin-bottom:1rem">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer" onclick="this.parentElement.querySelector('.day-content').classList.toggle('collapsed')">
+    <?= day_pill($day['day_label']) ?>
+    <span style="font-size:16px;font-weight:700;color:var(--text)"><?= htmlspecialchars($day['day_title']) ?></span>
+  </div>
+  <div class="day-content">
+    <?php foreach ($day['sections'] as $sec): ?>
+    <div class="section-hdr"><?= htmlspecialchars($sec['name']) ?></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Exercise</th>
+          <th style="width:70px">Sets</th>
+          <th style="width:90px">Reps</th>
+          <th style="width:60px">Video</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($sec['exercises'] as $ex): ?>
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-weight:600"><?= htmlspecialchars($ex['name']) ?></span>
+              <?php if ($ex['is_new']): ?>
+              <span class="badge" style="background:var(--warn-dim);color:var(--warn-text)">New</span>
+              <?php else: ?>
+              <span class="badge" style="background:var(--green-dim);color:var(--green-text)">Library</span>
+              <?php endif; ?>
+            </div>
+            <?php if ($ex['coach_tip']): ?>
+            <div class="coach-tip"><?= htmlspecialchars($ex['coach_tip']) ?></div>
+            <?php endif; ?>
+          </td>
+          <td><?= $ex['sets'] ?></td>
+          <td><?= htmlspecialchars($ex['reps']) ?></td>
+          <td><a href="<?= htmlspecialchars($ex['youtube_url']) ?>" target="_blank" class="btn-yt">YT</a></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endforeach; ?>
+
+<div style="display:flex;gap:10px;align-items:center;margin-top:1.5rem">
+  <form method="post" style="display:inline">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="accept">
+    <button type="submit" class="btn btn-primary">Accept &amp; Open Builder</button>
+  </form>
+  <a href="ai_builder.php" class="btn btn-ghost btn-sm">Regenerate</a>
+  <a href="plan_manager.php" class="btn btn-ghost btn-sm">Cancel</a>
+</div>
+
+<style>
+.day-content.collapsed { display: none; }
+</style>
 
 <?php endif; ?>
 <?php render_foot(); ?>
