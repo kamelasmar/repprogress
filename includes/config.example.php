@@ -123,3 +123,30 @@ function is_admin(): bool {
     $user = current_user();
     return $user && $user['is_admin'];
 }
+
+function active_user_id(): int {
+    $viewing = $_SESSION['viewing_as'] ?? null;
+    if ($viewing && (int)$viewing !== current_user_id()) {
+        $st = db()->prepare("SELECT 1 FROM shared_access WHERE owner_id=? AND granted_to=?");
+        $st->execute([(int)$viewing, current_user_id()]);
+        if ($st->fetch()) return (int)$viewing;
+        unset($_SESSION['viewing_as']);
+    }
+    return current_user_id();
+}
+
+function viewing_other_profile(): bool {
+    $viewing = $_SESSION['viewing_as'] ?? null;
+    return $viewing && (int)$viewing !== current_user_id();
+}
+
+function viewed_user(): ?array {
+    if (!viewing_other_profile()) return null;
+    static $vu = false;
+    if ($vu === false) {
+        $st = db()->prepare("SELECT id, name, email FROM users WHERE id=?");
+        $st->execute([active_user_id()]);
+        $vu = $st->fetch() ?: null;
+    }
+    return $vu;
+}

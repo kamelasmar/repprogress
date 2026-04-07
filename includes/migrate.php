@@ -139,4 +139,17 @@ function run_migrations(PDO $db): void {
     try {
         $db->exec("UPDATE plan_exercises SET section='Mobility' WHERE section='Hip Mobility'");
     } catch (Exception $e) {}
+
+    // ── Shared access table ─────────────────────────────────────────
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS shared_access (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            owner_id INT NOT NULL,
+            granted_to INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_share (owner_id, granted_to),
+            FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (granted_to) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Exception $e) {}
 }

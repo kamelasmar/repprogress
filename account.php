@@ -52,12 +52,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header("Location: account.php"); exit;
     }
+
+    if ($action === 'share_access') {
+        $share_email = strtolower(trim($_POST['share_email'] ?? ''));
+        if (!$share_email) {
+            flash('Please enter an email address.', 'error');
+        } else {
+            $target = $db->prepare("SELECT id, name, email FROM users WHERE email=?");
+            $target->execute([$share_email]);
+            $target = $target->fetch();
+            if (!$target) {
+                flash('No account found with that email.', 'error');
+            } elseif ($target['id'] == $uid) {
+                flash('You cannot share with yourself.', 'error');
+            } else {
+                try {
+                    $db->prepare("INSERT INTO shared_access (owner_id, granted_to) VALUES (?, ?)")
+                       ->execute([$uid, $target['id']]);
+                    flash('Access granted to ' . htmlspecialchars($target['name'] ?: $target['email']) . '.');
+                } catch (PDOException $e) {
+                    if ($e->getCode() == 23000) {
+                        flash('Already shared with this user.', 'error');
+                    } else { throw $e; }
+                }
+            }
+        }
+        header("Location: account.php"); exit;
+    }
+
+    if ($action === 'revoke_access') {
+        $db->prepare("DELETE FROM shared_access WHERE id=? AND owner_id=?")->execute([$_POST['share_id'], $uid]);
+        flash('Access revoked.');
+        header("Location: account.php"); exit;
+    }
 }
 
 // Reload user data after potential updates
 $st = $db->prepare("SELECT * FROM users WHERE id = ?");
 $st->execute([$uid]);
 $user = $st->fetch();
+
+// Shared access data
+$shared_with = $db->prepare("SELECT sa.id, u.name, u.email FROM shared_access sa JOIN users u ON sa.granted_to=u.id WHERE sa.owner_id=? ORDER BY sa.created_at");
+$shared_with->execute([$uid]);
+$shared_with = $shared_with->fetchAll();
+
+$shared_to_me = $db->prepare("SELECT sa.id, u.id AS user_id, u.name, u.email FROM shared_access sa JOIN users u ON sa.owner_id=u.id WHERE sa.granted_to=? ORDER BY sa.created_at");
+$shared_to_me->execute([$uid]);
+$shared_to_me = $shared_to_me->fetchAll();
 
 render_head('Account Settings', 'account');
 ?>
@@ -157,6 +199,71 @@ render_head('Account Settings', 'account');
   </form>
 </div>
 </div>
+</div>
+
+<!-- Shared Access -->
+<div style="margin-top:1.5rem">
+  <div class="page-title" style="font-size:18px;margin-bottom:1rem">Shared Access</div>
+
+  <div class="grid-2">
+    <!-- Share your account -->
+    <div class="card">
+      <div class="card-title">Share Your Account</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">
+        Grant someone full access to your plans, sessions, and body comp data. They can view and log on your behalf.
+      </p>
+      <form method="post">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="share_access">
+        <div class="form-group">
+          <label>Email of person to share with</label>
+          <input type="email" name="share_email" required placeholder="trainer@example.com">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Grant Access</button>
+      </form>
+
+      <?php if ($shared_with): ?>
+      <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">People with access</div>
+        <?php foreach ($shared_with as $sw): ?>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)"><?= htmlspecialchars($sw['name'] ?: $sw['email']) ?></div>
+            <?php if ($sw['name']): ?><div style="font-size:11px;color:var(--muted)"><?= htmlspecialchars($sw['email']) ?></div><?php endif; ?>
+          </div>
+          <form method="post" style="display:inline" onsubmit="return confirm('Revoke access for this user?')">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="revoke_access">
+            <input type="hidden" name="share_id" value="<?= $sw['id'] ?>">
+            <button class="btn btn-danger btn-sm">Revoke</button>
+          </form>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+    </div>
+
+    <!-- Accounts shared with you -->
+    <div class="card">
+      <div class="card-title">Accounts Shared With You</div>
+      <?php if ($shared_to_me): ?>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">
+        Use the profile switcher in the sidebar to view and manage these accounts.
+      </p>
+      <?php foreach ($shared_to_me as $sm): ?>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)"><?= htmlspecialchars($sm['name'] ?: $sm['email']) ?></div>
+          <?php if ($sm['name']): ?><div style="font-size:12px;color:var(--muted)"><?= htmlspecialchars($sm['email']) ?></div><?php endif; ?>
+        </div>
+        <a href="switch_profile.php?to=<?= $sm['user_id'] ?>" class="btn btn-primary btn-sm">View</a>
+      </div>
+      <?php endforeach; ?>
+      <?php else: ?>
+      <div class="empty"><p>No one has shared their account with you yet.</p></div>
+      <?php endif; ?>
+    </div>
+  </div>
 </div>
 
 <?php render_foot(); ?>

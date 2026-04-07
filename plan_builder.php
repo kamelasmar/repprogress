@@ -4,7 +4,7 @@ require_once 'includes/layout.php';
 require_once 'includes/auth.php';
 require_auth();
 $db  = db();
-$uid = current_user_id();
+$uid = active_user_id();
 
 $plan_id = (int)($_GET['plan_id'] ?? 0);
 if (!$plan_id) { header("Location: plan_manager.php"); exit; }

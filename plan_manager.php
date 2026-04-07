@@ -4,7 +4,7 @@ require_once 'includes/layout.php';
 require_once 'includes/auth.php';
 require_auth();
 $db  = db();
-$uid = current_user_id();
+$uid = active_user_id();
 
 // ── POST handlers ────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

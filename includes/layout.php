@@ -402,6 +402,30 @@ else: ?>
   $cu = current_user();
   if ($cu): ?>
   <div style="margin-top:auto;padding-top:1rem;border-top:1px solid var(--border)">
+    <?php
+    // Profile switcher
+    $shared_profiles = [];
+    try {
+        $sp = db()->prepare("SELECT u.id, u.name, u.email FROM shared_access sa JOIN users u ON sa.owner_id=u.id WHERE sa.granted_to=? ORDER BY u.name");
+        $sp->execute([current_user_id()]);
+        $shared_profiles = $sp->fetchAll();
+    } catch (Exception $e) {}
+    if ($shared_profiles):
+      $vu = viewed_user();
+    ?>
+    <div style="margin-bottom:8px">
+      <label style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Viewing</label>
+      <select onchange="window.location='switch_profile.php?to='+this.value"
+        style="width:100%;padding:6px 8px;font-size:12px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px">
+        <option value="self" <?= !$vu?'selected':'' ?>>Your Account</option>
+        <?php foreach ($shared_profiles as $sp_item): ?>
+        <option value="<?= $sp_item['id'] ?>" <?= ($vu && $vu['id']==$sp_item['id'])?'selected':'' ?>>
+          <?= htmlspecialchars($sp_item['name'] ?: $sp_item['email']) ?>
+        </option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <?php endif; ?>
     <?php if ($cu['name']): ?>
     <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px"><?= htmlspecialchars($cu['name']) ?></div>
     <?php endif; ?>
@@ -422,6 +446,16 @@ else: ?>
 </aside>
 
 <main class="main">
+<?php
+  // "Viewing as" banner
+  if (viewing_other_profile()):
+    $vu_banner = viewed_user();
+    if ($vu_banner): ?>
+<div style="background:var(--left-dim);color:var(--left-text);padding:8px 16px;border-radius:8px;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:500">
+  <span>Viewing as <strong><?= htmlspecialchars($vu_banner['name'] ?: $vu_banner['email']) ?></strong></span>
+  <a href="switch_profile.php?to=self" style="color:var(--left-text);font-weight:600;text-decoration:underline">Back to your account</a>
+</div>
+<?php endif; endif; ?>
 <?php
   $flash = get_flash();
   if ($flash): ?>
@@ -535,7 +569,7 @@ function get_countries(): array {
 }
 
 function active_plan(): ?array {
-    $uid = current_user_id();
+    $uid = active_user_id();
     if (!$uid) return null;
     try {
         $st = db()->prepare("SELECT * FROM plans WHERE is_active=1 AND user_id=? LIMIT 1");

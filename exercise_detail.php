@@ -4,7 +4,7 @@ require_once 'includes/layout.php';
 require_once 'includes/auth.php';
 require_auth();
 $db  = db();
-$uid = current_user_id();
+$uid = active_user_id();
 
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) { header("Location: exercises.php"); exit; }
