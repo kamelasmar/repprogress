@@ -1,35 +1,44 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/layout.php';
-$db = db();
+require_once 'includes/auth.php';
+require_auth();
+$db  = db();
+$uid = current_user_id();
 
 $day_titles_map = ['Day 1'=>'Lower Body','Day 2'=>'Push','Day 3'=>'Pull','Day 4'=>'Arms & Functional','Day 5'=>'Full Body + Mobility'];
 $day_pill_n     = ['Day 1'=>1,'Day 2'=>2,'Day 3'=>3,'Day 4'=>4,'Day 5'=>5];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'create_session') {
         $ap = active_plan();
         $dt = $day_titles_map[$_POST['day_label']] ?? $_POST['day_label'];
-        $db->prepare("INSERT INTO sessions (session_date,day_label,title,plan_id,duration_min,notes) VALUES (?,?,?,?,?,?)")
-           ->execute([$_POST['session_date'],$_POST['day_label'],$dt,$ap['id']??null,$_POST['duration_min']?:null,$_POST['notes']?:null]);
+        $db->prepare("INSERT INTO sessions (session_date,day_label,title,plan_id,duration_min,notes,user_id) VALUES (?,?,?,?,?,?,?)")
+           ->execute([$_POST['session_date'],$_POST['day_label'],$dt,$ap['id']??null,$_POST['duration_min']?:null,$_POST['notes']?:null,$uid]);
         $sid = $db->lastInsertId();
         flash('Session created!');
         header("Location: log.php?session_id=$sid"); exit;
     }
     if ($action === 'log_set') {
-        $db->prepare("INSERT INTO sets_log (session_id,exercise_id,set_number,reps,weight_kg,duration_sec,side,notes) VALUES (?,?,?,?,?,?,?,?)")
-           ->execute([$_POST['session_id'],$_POST['exercise_id'],$_POST['set_number'],$_POST['reps']?:null,$_POST['weight_kg']?:null,$_POST['duration_sec']?:null,$_POST['side'],$_POST['notes']?:null]);
-        flash('Set logged!');
+        // Verify session ownership
+        $own = $db->prepare("SELECT id FROM sessions WHERE id=? AND user_id=?");
+        $own->execute([$_POST['session_id'], $uid]);
+        if ($own->fetch()) {
+            $db->prepare("INSERT INTO sets_log (session_id,exercise_id,set_number,reps,weight_kg,duration_sec,side,notes,user_id) VALUES (?,?,?,?,?,?,?,?,?)")
+               ->execute([$_POST['session_id'],$_POST['exercise_id'],$_POST['set_number'],$_POST['reps']?:null,$_POST['weight_kg']?:null,$_POST['duration_sec']?:null,$_POST['side'],$_POST['notes']?:null,$uid]);
+            flash('Set logged!');
+        }
         header("Location: log.php?session_id=".$_POST['session_id']); exit;
     }
     if ($action === 'delete_set') {
-        $db->prepare("DELETE FROM sets_log WHERE id=?")->execute([$_POST['set_id']]);
+        $db->prepare("DELETE FROM sets_log WHERE id=? AND user_id=?")->execute([$_POST['set_id'], $uid]);
         flash('Set removed.');
         header("Location: log.php?session_id=".$_POST['session_id']); exit;
     }
     if ($action === 'delete_session') {
-        $db->prepare("DELETE FROM sessions WHERE id=?")->execute([$_POST['session_id']]);
+        $db->prepare("DELETE FROM sessions WHERE id=? AND user_id=?")->execute([$_POST['session_id'], $uid]);
         flash('Session deleted.');
         header("Location: log.php"); exit;
     }
@@ -63,23 +72,28 @@ if ($ap) {
 
 $session = null; $sets = [];
 if ($session_id) {
-    $session = $db->prepare("SELECT s.*, p.name AS plan_name FROM sessions s LEFT JOIN plans p ON s.plan_id=p.id WHERE s.id=?");
-    $session->execute([$session_id]); $session = $session->fetch();
-    $sets = $db->prepare("
-        SELECT sl.*, e.name AS ex_name, e.muscle_group, e.youtube_url, pe.is_left_priority
-        FROM sets_log sl
-        JOIN exercises e ON sl.exercise_id=e.id
-        LEFT JOIN plan_exercises pe ON pe.exercise_id=e.id AND pe.plan_id=?
-        WHERE sl.session_id=? ORDER BY sl.id
-    ");
-    $sets->execute([$ap['id']??0, $session_id]); $sets = $sets->fetchAll();
+    $session = $db->prepare("SELECT s.*, p.name AS plan_name FROM sessions s LEFT JOIN plans p ON s.plan_id=p.id WHERE s.id=? AND s.user_id=?");
+    $session->execute([$session_id, $uid]); $session = $session->fetch();
+    if ($session) {
+        $sets = $db->prepare("
+            SELECT sl.*, e.name AS ex_name, e.muscle_group, e.youtube_url, pe.is_left_priority
+            FROM sets_log sl
+            JOIN exercises e ON sl.exercise_id=e.id
+            LEFT JOIN plan_exercises pe ON pe.exercise_id=e.id AND pe.plan_id=?
+            WHERE sl.session_id=? AND sl.user_id=? ORDER BY sl.id
+        ");
+        $sets->execute([$ap['id']??0, $session_id, $uid]); $sets = $sets->fetchAll();
+    }
 }
 
-$all_sessions = $db->query("
+$st_sessions = $db->prepare("
   SELECT s.id, s.session_date, s.day_label, s.title, COUNT(sl.id) AS set_count, p.name AS plan_name
   FROM sessions s LEFT JOIN sets_log sl ON sl.session_id=s.id LEFT JOIN plans p ON s.plan_id=p.id
+  WHERE s.user_id=?
   GROUP BY s.id ORDER BY s.session_date DESC LIMIT 40
-")->fetchAll();
+");
+$st_sessions->execute([$uid]);
+$all_sessions = $st_sessions->fetchAll();
 
 $day_colors = ['Day 1'=>'#639922','Day 2'=>'#378ADD','Day 3'=>'#D4537E','Day 4'=>'#BA7517','Day 5'=>'#1D9E75'];
 
@@ -115,6 +129,7 @@ render_head('Log Workout','log');
       <p style="color:var(--red);font-size:13px">No active plan. <a href="plan_manager.php">Activate a plan first.</a></p>
       <?php else: ?>
       <form method="post">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" value="create_session">
         <input type="hidden" name="title" id="session-title" value="<?= htmlspecialchars($day_titles_map['Day 1'] ?? '') ?>">
         <div class="form-group"><label>Date</label><input type="date" name="session_date" value="<?= date('Y-m-d') ?>" required></div>
@@ -157,8 +172,8 @@ render_head('Log Workout','log');
         <span style="font-size:12px;font-weight:600;color:<?= $isA?'var(--accent)':'var(--text)' ?>"><?= htmlspecialchars($s['title']) ?></span>
       </div>
       <div style="font-size:11px;color:var(--muted);padding-left:12px">
-        <?= date('M j, Y', strtotime($s['session_date'])) ?> · <?= $s['set_count'] ?> sets
-        <?php if ($s['plan_name']): ?><span style="opacity:0.7"> · <?= htmlspecialchars($s['plan_name']) ?></span><?php endif; ?>
+        <?= date('M j, Y', strtotime($s['session_date'])) ?> &middot; <?= $s['set_count'] ?> sets
+        <?php if ($s['plan_name']): ?><span style="opacity:0.7"> &middot; <?= htmlspecialchars($s['plan_name']) ?></span><?php endif; ?>
       </div>
     </a>
     <?php endforeach; ?>
@@ -194,16 +209,17 @@ render_head('Log Workout','log');
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
       <div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <span class="day-pill day-pill-<?= $pn ?>"><?= $session['day_label'] ?> · <?= $dt ?></span>
+          <span class="day-pill day-pill-<?= $pn ?>"><?= $session['day_label'] ?> &middot; <?= $dt ?></span>
           <?php if ($session['plan_name']): ?>
           <span style="font-size:12px;color:var(--muted)"><?= htmlspecialchars($session['plan_name']) ?></span>
           <?php endif; ?>
         </div>
         <div style="font-size:17px;font-weight:700"><?= htmlspecialchars($session['title']) ?></div>
-        <div style="color:var(--muted);font-size:13px"><?= date('l, F j, Y', strtotime($session['session_date'])) ?><?= $session['duration_min']?' · '.$session['duration_min'].' min':'' ?></div>
+        <div style="color:var(--muted);font-size:13px"><?= date('l, F j, Y', strtotime($session['session_date'])) ?><?= $session['duration_min']?' &middot; '.$session['duration_min'].' min':'' ?></div>
         <?php if ($session['notes']): ?><div style="font-size:13px;color:var(--muted);margin-top:6px"><?= nl2br(htmlspecialchars($session['notes'])) ?></div><?php endif; ?>
       </div>
       <form method="post" onsubmit="return confirm('Delete this session?')">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" value="delete_session">
         <input type="hidden" name="session_id" value="<?= $session_id ?>">
         <button class="btn btn-danger btn-sm">Delete</button>
@@ -221,10 +237,10 @@ render_head('Log Workout','log');
     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);gap:8px">
       <div>
         <span style="font-size:13px;font-weight:500"><?= htmlspecialchars($e['name']) ?></span>
-        <span style="font-size:12px;color:var(--muted);margin-left:6px"><?= $e['sets_target'] ?>×<?= htmlspecialchars($e['reps_target']) ?></span>
+        <span style="font-size:12px;color:var(--muted);margin-left:6px"><?= $e['sets_target'] ?>&times;<?= htmlspecialchars($e['reps_target']) ?></span>
         <?php if ($e['is_left_priority']): ?><span class="badge badge-left" style="margin-left:4px">Left+</span><?php endif; ?>
       </div>
-      <?php if ($e['youtube_url']): ?><a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt" style="font-size:10px;padding:2px 7px">▶</a><?php endif; ?>
+      <?php if ($e['youtube_url']): ?><a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt" style="font-size:10px;padding:2px 7px">&#9654;</a><?php endif; ?>
     </div>
     <?php endforeach; ?>
     <?php endforeach; ?>
@@ -244,8 +260,8 @@ render_head('Log Workout','log');
         <td>
           <div style="font-weight:500;font-size:13px"><?= htmlspecialchars($s['ex_name']) ?></div>
           <div style="font-size:11px;color:var(--muted)"><?= $s['muscle_group'] ?>
-            <?php if ($s['is_left_priority']): ?><span style="color:var(--left)"> · Left+</span><?php endif; ?>
-            <?php if ($s['youtube_url']): ?> · <a href="<?= htmlspecialchars($s['youtube_url']) ?>" target="_blank" style="color:#FF0000;font-size:11px">▶ Watch</a><?php endif; ?>
+            <?php if ($s['is_left_priority']): ?><span style="color:var(--left)"> &middot; Left+</span><?php endif; ?>
+            <?php if ($s['youtube_url']): ?> &middot; <a href="<?= htmlspecialchars($s['youtube_url']) ?>" target="_blank" style="color:#FF0000;font-size:11px">&#9654; Watch</a><?php endif; ?>
           </div>
         </td>
         <td><?= $s['side'] ?></td>
@@ -254,10 +270,11 @@ render_head('Log Workout','log');
         <td><?= $s['duration_sec'] ? $s['duration_sec'].'s' : '—' ?></td>
         <td>
           <form method="post" style="display:inline">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete_set">
             <input type="hidden" name="set_id" value="<?= $s['id'] ?>">
             <input type="hidden" name="session_id" value="<?= $session_id ?>">
-            <button class="btn btn-danger btn-sm">×</button>
+            <button class="btn btn-danger btn-sm">&times;</button>
           </form>
         </td>
       </tr>
@@ -271,6 +288,7 @@ render_head('Log Workout','log');
   <div class="card">
     <div class="card-title">Log a Set</div>
     <form method="post" id="set-form">
+      <?= csrf_field() ?>
       <input type="hidden" name="action" value="log_set">
       <input type="hidden" name="session_id" value="<?= $session_id ?>">
       <div class="form-group">
@@ -288,15 +306,16 @@ render_head('Log Workout','log');
               data-reps="<?= htmlspecialchars($e['reps_target']) ?>"
               data-lsets="<?= $e['sets_left']??0 ?>"
               data-lreps="<?= $e['reps_left_bonus']??0 ?>">
-              <?= htmlspecialchars($e['name']) ?><?= $e['is_left_priority']?' ⚡':'' ?>
+              <?= htmlspecialchars($e['name']) ?><?= $e['is_left_priority']?' *':'' ?>
             </option>
             <?php endforeach; ?>
           </optgroup>
           <?php endforeach; ?>
           <?php if (!$sess_plan_exs): ?>
-          <!-- Fallback: all exercises if no plan exercises found -->
-          <?php $all_lib = $db->query("SELECT id, name, muscle_group FROM exercises ORDER BY muscle_group, name")->fetchAll();
-          foreach ($all_lib as $e): ?>
+          <?php
+          $all_lib_st = $db->prepare("SELECT id, name, muscle_group FROM exercises WHERE status='approved' OR created_by=? ORDER BY muscle_group, name");
+          $all_lib_st->execute([$uid]);
+          foreach ($all_lib_st->fetchAll() as $e): ?>
           <option value="<?= $e['id'] ?>"><?= htmlspecialchars($e['name']) ?></option>
           <?php endforeach; ?>
           <?php endif; ?>
@@ -304,18 +323,18 @@ render_head('Log Workout','log');
       </div>
 
       <div id="ex-info" style="display:none;margin-bottom:1rem">
-        <div id="target-box" style="display:none;padding:8px 12px;background:var(--accent-light);border-radius:7px;font-size:13px;color:#085041;margin-bottom:8px">
+        <div id="target-box" style="display:none;padding:8px 12px;background:var(--accent-dim);border-radius:7px;font-size:13px;color:var(--accent-text);margin-bottom:8px">
           Target: <strong id="target-text"></strong>
         </div>
         <div id="left-banner" style="display:none" class="left-banner">
-          ⚡ Left priority — log left and right sides separately to track the gap
+          Left priority — log left and right sides separately to track the gap
         </div>
         <div id="tip-box" style="display:none;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5;border:1px solid var(--border)">
           <strong style="color:var(--text);font-size:11px;text-transform:uppercase;letter-spacing:0.04em">Coach tip:</strong>
           <div id="tip-text" style="margin-top:2px"></div>
         </div>
         <div id="yt-box" style="margin-top:8px;display:none">
-          <a id="yt-link" href="#" target="_blank" class="btn-yt">▶ Watch on YouTube</a>
+          <a id="yt-link" href="#" target="_blank" class="btn-yt">&#9654; Watch on YouTube</a>
         </div>
       </div>
 
@@ -341,7 +360,7 @@ render_head('Log Workout','log');
 
 <?php else: ?>
   <div class="card"><div class="empty">
-    <div class="empty-icon">📋</div>
+    <div class="empty-icon">&#128203;</div>
     <p>Select a session on the left, or create a new one.</p>
     <button onclick="document.getElementById('nsf').style.display='block'" class="btn btn-primary">+ New Session</button>
   </div></div>
@@ -368,8 +387,8 @@ function onExChange(sel) {
   const tb = document.getElementById('target-box');
   if (sets && reps) {
     tb.style.display='block';
-    let t = sets+'×'+reps;
-    if (isLeft && (lsets>0||lreps>0)) t += ' · Left: +'+(lsets||0)+' sets, +'+(lreps||0)+' reps';
+    let t = sets+'\u00d7'+reps;
+    if (isLeft && (lsets>0||lreps>0)) t += ' \u00b7 Left: +'+(lsets||0)+' sets, +'+(lreps||0)+' reps';
     document.getElementById('target-text').textContent = t;
   } else tb.style.display='none';
   const tipBox = document.getElementById('tip-box');

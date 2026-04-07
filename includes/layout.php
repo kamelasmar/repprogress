@@ -1,11 +1,11 @@
 <?php
-function render_head(string $title, string $active = ''): void {
+function render_head(string $title, string $active = '', bool $auth_page = false): void {
     $pages = [
-        'index'    => ['Dashboard',   'index.php',    '📊'],
-        'log'      => ['Log',         'log.php',      '🏋️'],
-        'weight'   => ['Weight',      'weight.php',   '⚖️'],
-        'exercises'=> ['Programme',   'exercises.php','📋'],
-        'schedule' => ['Schedule',    'schedule.php', '📅'],
+        'index'    => ['Dashboard',   'index.php',    '&#128202;'],
+        'log'      => ['Log',         'log.php',      '&#127947;&#65039;'],
+        'weight'   => ['Weight',      'weight.php',   '&#9878;&#65039;'],
+        'exercises'=> ['Programme',   'exercises.php', '&#128203;'],
+        'schedule' => ['Schedule',    'schedule.php',  '&#128197;'],
     ];
     ?>
 <!DOCTYPE html>
@@ -15,8 +15,10 @@ function render_head(string $title, string $active = ''): void {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f0f0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title><?= htmlspecialchars($title) ?> — Kamel's Workout</title>
+<title><?= htmlspecialchars($title) ?> — FitTracker</title>
+<?php if (!$auth_page): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<?php endif; ?>
 <style>
 /* ── Dark theme tokens ──────────────────────────────────────── */
 :root {
@@ -137,6 +139,12 @@ img { max-width: 100%; }
   padding-bottom: calc(1.75rem + env(safe-area-inset-bottom));
 }
 
+/* ── Auth page layout ──────────────────────────────────────── */
+.auth-box {
+  max-width: 420px;
+  margin: 3rem auto;
+}
+
 /* ── Mobile bottom nav ──────────────────────────────────────── */
 .bottom-nav {
   display: none;
@@ -222,6 +230,9 @@ img { max-width: 100%; }
 .badge-hiit { background: var(--red-dim);     color: var(--red-text); }
 .badge-core { background: var(--warn-dim);    color: var(--warn-text); }
 .badge-func { background: var(--green-dim);   color: var(--green-text); }
+.badge-pending { background: var(--warn-dim); color: var(--warn-text); }
+.badge-suggested { background: var(--left-dim); color: var(--left-text); }
+.badge-admin { background: var(--accent-dim); color: var(--accent-text); }
 
 /* ── Day pills ──────────────────────────────────────────────── */
 .day-pill   { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 8px; border-radius: 20px; font-size: 13px; font-weight: 600; }
@@ -358,11 +369,22 @@ canvas { display: block; }
 </style>
 </head>
 <body>
+<?php if ($auth_page): ?>
+<div class="layout">
+<main class="main" style="max-width:100%">
+<?php
+  $flash = get_flash();
+  if ($flash): ?>
+<div style="max-width:420px;margin:0 auto">
+<div class="flash flash-<?= $flash['type'] ?>"><?= htmlspecialchars($flash['msg']) ?></div>
+</div>
+<?php endif;
+else: ?>
 <div class="layout">
 
 <!-- Desktop sidebar -->
 <aside class="sidebar">
-  <div class="sidebar-brand">Kamel's <em>Workout</em></div>
+  <div class="sidebar-brand">Fit<em>Tracker</em></div>
 
   <div class="nav-section">Menu</div>
   <?php foreach ($pages as $key => [$label, $href, $icon]): ?>
@@ -370,6 +392,22 @@ canvas { display: block; }
     <span class="nav-icon"><?= $icon ?></span><?= $label ?>
   </a>
   <?php endforeach; ?>
+
+  <?php
+  $cu = current_user();
+  if ($cu): ?>
+  <div style="margin-top:auto;padding-top:1rem;border-top:1px solid var(--border)">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px;word-break:break-all">
+      <?= htmlspecialchars($cu['email']) ?>
+      <?php if ($cu['is_admin']): ?>
+        <span class="badge badge-admin" style="margin-left:4px">Admin</span>
+      <?php endif; ?>
+    </div>
+    <a href="logout.php" class="nav-link" style="color:var(--red-text)">
+      <span class="nav-icon">&#128682;</span>Logout
+    </a>
+  </div>
+  <?php endif; ?>
 </aside>
 
 <main class="main">
@@ -378,16 +416,16 @@ canvas { display: block; }
   if ($flash): ?>
 <div class="flash flash-<?= $flash['type'] ?>"><?= htmlspecialchars($flash['msg']) ?></div>
 <?php endif;
+endif;
 }
 
-function render_foot(): void {
-  global $pages_global;
+function render_foot(bool $auth_page = false): void {
   $pages = [
-      'index'    => ['Dashboard', 'index.php',    '📊'],
-      'log'      => ['Log',       'log.php',      '🏋️'],
-      'weight'   => ['Weight',    'weight.php',   '⚖️'],
-      'exercises'=> ['Programme', 'exercises.php','📋'],
-      'schedule' => ['Schedule',  'schedule.php', '📅'],
+      'index'    => ['Dashboard', 'index.php',    '&#128202;'],
+      'log'      => ['Log',       'log.php',      '&#127947;&#65039;'],
+      'weight'   => ['Weight',    'weight.php',   '&#9878;&#65039;'],
+      'exercises'=> ['Programme', 'exercises.php', '&#128203;'],
+      'schedule' => ['Schedule',  'schedule.php',  '&#128197;'],
   ];
   // Detect active page from current script
   $current = basename($_SERVER['PHP_SELF'], '.php');
@@ -397,6 +435,7 @@ function render_foot(): void {
 </main>
 </div>
 
+<?php if (!$auth_page): ?>
 <!-- Mobile bottom nav -->
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
@@ -418,6 +457,7 @@ if (typeof Chart !== 'undefined') {
   Chart.defaults.font.size = 12;
 }
 </script>
+<?php endif; ?>
 </body></html>
 <?php }
 
@@ -427,6 +467,11 @@ function day_pill(string $day_label): string {
 }
 
 function active_plan(): ?array {
-    try { return db()->query("SELECT * FROM plans WHERE is_active=1 LIMIT 1")->fetch() ?: null; }
-    catch (Exception $e) { return null; }
+    $uid = current_user_id();
+    if (!$uid) return null;
+    try {
+        $st = db()->prepare("SELECT * FROM plans WHERE is_active=1 AND user_id=? LIMIT 1");
+        $st->execute([$uid]);
+        return $st->fetch() ?: null;
+    } catch (Exception $e) { return null; }
 }

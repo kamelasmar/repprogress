@@ -1,7 +1,10 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/layout.php';
-$db = db();
+require_once 'includes/auth.php';
+require_auth();
+$db  = db();
+$uid = current_user_id();
 
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) { header("Location: exercises.php"); exit; }
@@ -11,17 +14,20 @@ if (!$ex) { header("Location: exercises.php"); exit; }
 
 // Filter by plan
 $filter_plan = $_GET['plan_id'] ?? '';
-$plan_filter_sql = $filter_plan ? "AND s.plan_id=?" : "";
-$params = $filter_plan ? [$id, $filter_plan] : [$id];
+$plan_filter_sql = $filter_plan ? "AND ss.plan_id=?" : "";
+$params = [$id, $uid];
+if ($filter_plan) $params[] = $filter_plan;
 
 $sets = $db->prepare("
   SELECT sl.*, ss.session_date, ss.title AS session_title, ss.id AS session_id, ss.plan_id, p.name AS plan_name
   FROM sets_log sl JOIN sessions ss ON sl.session_id=ss.id LEFT JOIN plans p ON ss.plan_id=p.id
-  WHERE sl.exercise_id=? $plan_filter_sql ORDER BY ss.session_date ASC, sl.id ASC
+  WHERE sl.exercise_id=? AND ss.user_id=? $plan_filter_sql ORDER BY ss.session_date ASC, sl.id ASC
 ");
 $sets->execute($params); $sets = $sets->fetchAll();
 
-$all_plans = $db->query("SELECT DISTINCT p.id, p.name FROM plans p JOIN sessions s ON s.plan_id=p.id JOIN sets_log sl ON sl.session_id=s.id WHERE sl.exercise_id=$id ORDER BY p.created_at")->fetchAll();
+$st_plans = $db->prepare("SELECT DISTINCT p.id, p.name FROM plans p JOIN sessions s ON s.plan_id=p.id JOIN sets_log sl ON sl.session_id=s.id WHERE sl.exercise_id=? AND s.user_id=? ORDER BY p.created_at");
+$st_plans->execute([$id, $uid]);
+$all_plans = $st_plans->fetchAll();
 
 // Progression data
 $prog = $left_prog = $right_prog = [];

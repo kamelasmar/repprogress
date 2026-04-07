@@ -49,4 +49,61 @@ function run_migrations(PDO $db): void {
         if (!in_array('notes', $lcols))
             $db->exec("ALTER TABLE sets_log ADD COLUMN notes TEXT DEFAULT NULL");
     } catch (Exception $e) {}
+
+    // ── users table ────────────────────────────────────────────────────
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            phone VARCHAR(30) NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            email_verified TINYINT(1) DEFAULT 0,
+            verification_token VARCHAR(64) DEFAULT NULL,
+            verification_expires DATETIME DEFAULT NULL,
+            reset_token VARCHAR(64) DEFAULT NULL,
+            reset_expires DATETIME DEFAULT NULL,
+            is_admin TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login DATETIME DEFAULT NULL,
+            INDEX idx_verification_token (verification_token),
+            INDEX idx_reset_token (reset_token)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Exception $e) {}
+
+    // ── Add user_id to plans, sessions, sets_log, weight_log ────────
+    $user_tables = ['plans', 'sessions', 'sets_log', 'weight_log'];
+    foreach ($user_tables as $tbl) {
+        try {
+            $tcols = $db->query("SHOW COLUMNS FROM $tbl")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('user_id', $tcols)) {
+                $db->exec("ALTER TABLE $tbl ADD COLUMN user_id INT DEFAULT NULL");
+                $db->exec("ALTER TABLE $tbl ADD INDEX idx_{$tbl}_user (user_id)");
+            }
+        } catch (Exception $e) {}
+    }
+
+    // ── Update weight_log unique constraint for multi-user ──────────
+    try {
+        $keys = $db->query("SHOW INDEX FROM weight_log WHERE Key_name = 'unique_date'")->fetchAll();
+        if ($keys) {
+            $db->exec("ALTER TABLE weight_log DROP INDEX unique_date");
+            $db->exec("ALTER TABLE weight_log ADD UNIQUE KEY unique_user_date (user_id, logged_date)");
+        }
+    } catch (Exception $e) {}
+
+    // ── Add exercise approval columns ───────────────────────────────
+    $ecols = $db->query("SHOW COLUMNS FROM exercises")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('created_by', $ecols)) {
+        try { $db->exec("ALTER TABLE exercises ADD COLUMN created_by INT DEFAULT NULL"); } catch (Exception $e) {}
+    }
+    if (!in_array('status', $ecols)) {
+        try {
+            $db->exec("ALTER TABLE exercises ADD COLUMN status ENUM('approved','pending') DEFAULT 'pending'");
+            // Mark all existing exercises as approved (original library)
+            $db->exec("UPDATE exercises SET status = 'approved' WHERE status = 'pending' OR status IS NULL");
+        } catch (Exception $e) {}
+    }
+    if (!in_array('is_suggested', $ecols)) {
+        try { $db->exec("ALTER TABLE exercises ADD COLUMN is_suggested TINYINT(1) DEFAULT 0"); } catch (Exception $e) {}
+    }
 }

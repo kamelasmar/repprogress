@@ -1,16 +1,20 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/layout.php';
-$db = db();
+require_once 'includes/auth.php';
+require_auth();
+$db  = db();
+$uid = current_user_id();
 
 // ── POST handlers ────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
 
     // Activate a plan
     if ($action === 'activate') {
-        $db->prepare("UPDATE plans SET is_active=0")->execute();
-        $db->prepare("UPDATE plans SET is_active=1 WHERE id=?")->execute([$_POST['plan_id']]);
+        $db->prepare("UPDATE plans SET is_active=0 WHERE user_id=?")->execute([$uid]);
+        $db->prepare("UPDATE plans SET is_active=1 WHERE id=? AND user_id=?")->execute([$_POST['plan_id'], $uid]);
         flash('Plan activated. New sessions will be logged under this plan.');
         header("Location: plan_manager.php"); exit;
     }
@@ -19,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'create') {
         $start = $_POST['start_date'] ?: date('Y-m-d');
         $end   = date('Y-m-d', strtotime($start . ' + ' . (int)$_POST['weeks_duration'] . ' weeks'));
-        $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active) VALUES (?,?,?,?,?,?,0)")
-           ->execute([$_POST['name'], $_POST['description'], $_POST['phase_number'], $_POST['weeks_duration'], $start, $end]);
+        $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active, user_id) VALUES (?,?,?,?,?,?,0,?)")
+           ->execute([$_POST['name'], $_POST['description'], $_POST['phase_number'], $_POST['weeks_duration'], $start, $end, $uid]);
         $new_id = $db->lastInsertId();
         // Seed blank days
         $days = [['Day 1','Lower Body',1,'Tue'],['Day 2','Push',2,'Wed'],['Day 3','Pull',3,'Fri'],['Day 4','Arms & Functional',4,'Sat'],['Day 5','Full Body + Mobility',5,'Mon']];
@@ -37,12 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $weeks  = (int)$_POST['weeks_duration'];
         $end    = date('Y-m-d', strtotime("$start + $weeks weeks"));
 
-        $src = $db->prepare("SELECT * FROM plans WHERE id=?");
-        $src->execute([$src_id]);
+        $src = $db->prepare("SELECT * FROM plans WHERE id=? AND user_id=?");
+        $src->execute([$src_id, $uid]);
         $src = $src->fetch();
+        if (!$src) { flash('Plan not found.', 'error'); header("Location: plan_manager.php"); exit; }
 
-        $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active) VALUES (?,?,?,?,?,?,0)")
-           ->execute([$_POST['name'], $_POST['description'] ?: $src['description'], $_POST['phase_number'], $weeks, $start, $end]);
+        $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active, user_id) VALUES (?,?,?,?,?,?,0,?)")
+           ->execute([$_POST['name'], $_POST['description'] ?: $src['description'], $_POST['phase_number'], $weeks, $start, $end, $uid]);
         $new_id = $db->lastInsertId();
 
         // Clone plan_days
@@ -64,19 +69,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Delete plan (only if not active and has no sessions)
     if ($action === 'delete') {
         $pid = (int)$_POST['plan_id'];
-        $has_sessions = $db->prepare("SELECT COUNT(*) FROM sessions WHERE plan_id=?")->execute([$pid]) ? $db->query("SELECT COUNT(*) FROM sessions WHERE plan_id=$pid")->fetchColumn() : 0;
-        $is_active    = $db->prepare("SELECT is_active FROM plans WHERE id=?")->execute([$pid]) ? $db->query("SELECT is_active FROM plans WHERE id=$pid")->fetchColumn() : 1;
-        if ($is_active) { flash('Cannot delete the active plan.', 'error'); }
-        elseif ($has_sessions) { flash('Cannot delete a plan with logged sessions. Deactivate it instead.', 'error'); }
+        $chk = $db->prepare("SELECT is_active, (SELECT COUNT(*) FROM sessions WHERE plan_id=? AND user_id=?) AS session_count FROM plans WHERE id=? AND user_id=?");
+        $chk->execute([$pid, $uid, $pid, $uid]);
+        $info = $chk->fetch();
+        if (!$info) { flash('Plan not found.', 'error'); }
+        elseif ($info['is_active']) { flash('Cannot delete the active plan.', 'error'); }
+        elseif ($info['session_count']) { flash('Cannot delete a plan with logged sessions. Deactivate it instead.', 'error'); }
         else {
-            $db->prepare("DELETE FROM plans WHERE id=?")->execute([$pid]);
+            $db->prepare("DELETE FROM plans WHERE id=? AND user_id=?")->execute([$pid, $uid]);
             flash('Plan deleted.');
         }
         header("Location: plan_manager.php"); exit;
     }
 }
 
-$plans = $db->query("SELECT p.*, (SELECT COUNT(*) FROM sessions s WHERE s.plan_id=p.id) AS session_count FROM plans p ORDER BY p.created_at DESC")->fetchAll();
+$st = $db->prepare("SELECT p.*, (SELECT COUNT(*) FROM sessions s WHERE s.plan_id=p.id AND s.user_id=?) AS session_count FROM plans p WHERE p.user_id=? ORDER BY p.created_at DESC");
+$st->execute([$uid, $uid]);
+$plans = $st->fetchAll();
 $all_plans = $plans;
 
 render_head('Plans', 'plans');
@@ -132,6 +141,7 @@ render_head('Plans', 'plans');
       <a href="plan_builder.php?plan_id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏️ Edit Plan</a>
       <?php if (!$p['is_active']): ?>
       <form method="post" style="display:inline">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" value="activate">
         <input type="hidden" name="plan_id" value="<?= $p['id'] ?>">
         <button class="btn btn-primary btn-sm">▶ Activate</button>
@@ -139,6 +149,7 @@ render_head('Plans', 'plans');
       <?php endif; ?>
       <?php if (!$p['is_active'] && !$p['session_count']): ?>
       <form method="post" style="display:inline" onsubmit="return confirm('Delete this plan?')">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" value="delete">
         <input type="hidden" name="plan_id" value="<?= $p['id'] ?>">
         <button class="btn btn-danger btn-sm">Delete</button>
@@ -160,6 +171,7 @@ render_head('Plans', 'plans');
   <div class="card">
     <div class="card-title">Create New Plan</div>
     <form method="post">
+      <?= csrf_field() ?>
       <input type="hidden" name="action" value="create">
       <div class="form-group">
         <label>Plan Name</label>
@@ -193,6 +205,7 @@ render_head('Plans', 'plans');
     <?php if ($plans): ?>
     <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Copies all days and exercises from the source plan. Then customise in the builder — add, remove or swap exercises without touching your historical data.</p>
     <form method="post">
+      <?= csrf_field() ?>
       <input type="hidden" name="action" value="clone">
       <div class="form-group">
         <label>Copy from</label>

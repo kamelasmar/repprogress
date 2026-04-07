@@ -1,18 +1,22 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/layout.php';
-$db = db();
+require_once 'includes/auth.php';
+require_auth();
+$db  = db();
+$uid = current_user_id();
 
 $plan_id = (int)($_GET['plan_id'] ?? 0);
 if (!$plan_id) { header("Location: plan_manager.php"); exit; }
 
-$plan = $db->prepare("SELECT * FROM plans WHERE id=?");
-$plan->execute([$plan_id]);
+$plan = $db->prepare("SELECT * FROM plans WHERE id=? AND user_id=?");
+$plan->execute([$plan_id, $uid]);
 $plan = $plan->fetch();
 if (!$plan) { header("Location: plan_manager.php"); exit; }
 
 // ── POST handlers ────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_exercise') {
@@ -96,8 +100,10 @@ $day_config = $db->prepare("SELECT * FROM plan_days WHERE plan_id=? AND day_labe
 $day_config->execute([$plan_id, $active_day]);
 $day_config = $day_config->fetch();
 
-// All exercises for the add form
-$all_ex = $db->query("SELECT id, name, muscle_group, is_mobility, is_core, is_functional, cardio_type FROM exercises ORDER BY muscle_group, name")->fetchAll();
+// All exercises for the add form (approved + user's own pending)
+$all_ex_st = $db->prepare("SELECT id, name, muscle_group, is_mobility, is_core, is_functional, cardio_type FROM exercises WHERE status='approved' OR created_by=? ORDER BY muscle_group, name");
+$all_ex_st->execute([$uid]);
+$all_ex = $all_ex_st->fetchAll();
 $ex_by_mg = [];
 foreach ($all_ex as $e) $ex_by_mg[$e['muscle_group']][] = $e;
 
@@ -117,9 +123,10 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
   </div>
   <?php if (!$plan['is_active']): ?>
   <form method="post" action="plan_manager.php">
+    <?= csrf_field() ?>
     <input type="hidden" name="action" value="activate">
     <input type="hidden" name="plan_id" value="<?= $plan_id ?>">
-    <button class="btn btn-primary btn-sm">▶ Activate This Plan</button>
+    <button class="btn btn-primary btn-sm">&#9654; Activate This Plan</button>
   </form>
   <?php endif; ?>
 </div>
@@ -146,6 +153,7 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
   <div class="card" style="margin-bottom:1.25rem">
     <div class="card-title">Day Settings</div>
     <form method="post">
+      <?= csrf_field() ?>
       <input type="hidden" name="action" value="update_day">
       <input type="hidden" name="day_label" value="<?= $active_day ?>">
       <div class="form-row form-row-3">
@@ -213,16 +221,17 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
       </div>
       <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         <!-- Move up/down -->
-        <form method="post" style="display:inline"><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="up"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm" style="padding:4px 8px">↑</button></form>
-        <form method="post" style="display:inline"><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="down"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm" style="padding:4px 8px">↓</button></form>
+        <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="up"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm" style="padding:4px 8px">&uarr;</button></form>
+        <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="down"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm" style="padding:4px 8px">&darr;</button></form>
         <!-- Edit inline -->
         <button onclick="toggleEdit(<?= $e['id'] ?>)" class="btn btn-ghost btn-sm">Edit</button>
         <!-- Remove -->
         <form method="post" style="display:inline" onsubmit="return confirm('Remove from plan?')">
+          <?= csrf_field() ?>
           <input type="hidden" name="action" value="remove_exercise">
           <input type="hidden" name="pe_id" value="<?= $e['id'] ?>">
           <input type="hidden" name="day_label" value="<?= $active_day ?>">
-          <button class="btn btn-danger btn-sm">×</button>
+          <button class="btn btn-danger btn-sm">&times;</button>
         </form>
         <?php if ($e['youtube_url']): ?>
         <a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt">▶</a>
@@ -232,6 +241,7 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
     <!-- Inline edit form (hidden by default) -->
     <div id="edit-<?= $e['id'] ?>" style="display:none;background:var(--bg);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
       <form method="post">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" value="update_exercise">
         <input type="hidden" name="pe_id" value="<?= $e['id'] ?>">
         <input type="hidden" name="day_label" value="<?= $active_day ?>">
@@ -275,6 +285,7 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
   <div class="card" style="position:sticky;top:1rem">
     <div class="card-title">Add Exercise</div>
     <form method="post">
+      <?= csrf_field() ?>
       <input type="hidden" name="action" value="add_exercise">
       <input type="hidden" name="day_label" value="<?= $active_day ?>">
       <div class="form-group">

@@ -1,24 +1,30 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/layout.php';
-$db = db();
+require_once 'includes/auth.php';
+require_auth();
+$db  = db();
+$uid = current_user_id();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'log_weight') {
-        $st = $db->prepare("INSERT INTO weight_log (logged_date, weight_kg, notes) VALUES (?,?,?) ON DUPLICATE KEY UPDATE weight_kg=VALUES(weight_kg), notes=VALUES(notes)");
-        $st->execute([$_POST['logged_date'], $_POST['weight_kg'], $_POST['notes'] ?: null]);
+        $st = $db->prepare("INSERT INTO weight_log (logged_date, weight_kg, notes, user_id) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE weight_kg=VALUES(weight_kg), notes=VALUES(notes)");
+        $st->execute([$_POST['logged_date'], $_POST['weight_kg'], $_POST['notes'] ?: null, $uid]);
         flash('Weight logged!');
         header("Location: weight.php"); exit;
     }
     if ($action === 'delete_weight') {
-        $db->prepare("DELETE FROM weight_log WHERE id=?")->execute([$_POST['id']]);
+        $db->prepare("DELETE FROM weight_log WHERE id=? AND user_id=?")->execute([$_POST['id'], $uid]);
         flash('Entry deleted.');
         header("Location: weight.php"); exit;
     }
 }
 
-$all = $db->query("SELECT * FROM weight_log ORDER BY logged_date ASC")->fetchAll();
+$st = $db->prepare("SELECT * FROM weight_log WHERE user_id=? ORDER BY logged_date ASC");
+$st->execute([$uid]);
+$all = $st->fetchAll();
 $latest    = $all ? end($all) : null;
 $first     = $all ? $all[0] : null;
 $total_del = ($latest && $first) ? round($latest['weight_kg'] - $first['weight_kg'], 1) : null;
@@ -72,6 +78,7 @@ render_head('Weight Tracker', 'weight');
     <div class="card" style="margin-bottom:1.25rem">
       <div class="card-title">Log Weight</div>
       <form method="post">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" value="log_weight">
         <div class="form-group">
           <label>Date</label>
@@ -102,9 +109,10 @@ render_head('Weight Tracker', 'weight');
           <td style="color:var(--muted);font-size:13px"><?= htmlspecialchars($r['notes'] ?? '') ?></td>
           <td>
             <form method="post" style="display:inline">
+              <?= csrf_field() ?>
               <input type="hidden" name="action" value="delete_weight">
               <input type="hidden" name="id" value="<?= $r['id'] ?>">
-              <button class="btn btn-danger btn-sm">×</button>
+              <button class="btn btn-danger btn-sm">&times;</button>
             </form>
           </td>
         </tr>

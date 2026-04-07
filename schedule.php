@@ -1,14 +1,19 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/layout.php';
-$db = db();
+require_once 'includes/auth.php';
+require_auth();
+$db  = db();
+$uid = current_user_id();
 
 // Last 4 weeks of sessions for the calendar
-$recent = $db->query("
+$st = $db->prepare("
     SELECT session_date, day_label FROM sessions
-    WHERE session_date >= DATE_SUB(CURDATE(), INTERVAL 28 DAY)
+    WHERE session_date >= DATE_SUB(CURDATE(), INTERVAL 28 DAY) AND user_id = ?
     ORDER BY session_date ASC
-")->fetchAll();
+");
+$st->execute([$uid]);
+$recent = $st->fetchAll();
 $logged = [];
 foreach ($recent as $r) $logged[$r['session_date']] = $r['day_label'];
 
