@@ -175,9 +175,27 @@ render_head('Plans', 'plans');
 <!-- ── Create / Clone ─────────────────────────────────────────────────────── -->
 <div class="grid-2" style="margin-top:1.5rem">
 
-  <!-- New blank plan -->
+  <!-- New plan — choose type -->
   <div class="card">
     <div class="card-title">Create New Plan</div>
+
+    <?php if (openai_api_key_configured()): ?>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Choose how to start your new plan:</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
+      <button type="button" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal" onclick="document.getElementById('blank-form').style.display='block';document.getElementById('ai-cta').style.display='none';">
+        <span style="font-size:20px;display:block;margin-bottom:4px">&#128221;</span>
+        <span style="font-weight:700;display:block">Blank Plan</span>
+        <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Start from scratch</span>
+      </button>
+      <a href="ai_builder.php" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal;text-decoration:none">
+        <span style="font-size:20px;display:block;margin-bottom:4px">&#129302;</span>
+        <span style="font-weight:700;display:block">AI Generated</span>
+        <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Answer questions, get a plan</span>
+      </a>
+    </div>
+    <?php endif; ?>
+
+    <div id="blank-form" <?= openai_api_key_configured() ? 'style="display:none"' : '' ?>>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="create">
@@ -211,8 +229,9 @@ render_head('Plans', 'plans');
         <label>Description (optional)</label>
         <textarea name="description" rows="2" placeholder="Focus, goals, key differences from last phase..."></textarea>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm">Create &amp; Open Builder →</button>
+      <button type="submit" class="btn btn-primary btn-sm">Create &amp; Open Builder &rarr;</button>
     </form>
+    </div>
   </div>
 
   <!-- Clone existing plan -->
