@@ -10,9 +10,10 @@ define('DB_PASS',    '');   // database password
 define('DB_CHARSET', 'utf8mb4');
 
 // ── Email / App Configuration ─────────────────────────────────────────────────
-define('MAIL_FROM',      'noreply@yourdomain.com');
+define('MAIL_FROM',      'noreply@repprogress.com');
 define('MAIL_FROM_NAME', 'Repprogress');
-define('APP_URL',        'https://yourdomain.com/repprogress'); // no trailing slash
+define('APP_URL',        'https://repprogress.com'); // no trailing slash
+define('SENDGRID_API_KEY', '');  // SendGrid API key for transactional emails
 
 // ── Session Security ──────────────────────────────────────────────────────────
 ini_set('session.cookie_httponly', 1);

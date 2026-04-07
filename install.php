@@ -98,8 +98,9 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['step'] ?? '') !== 'admin') {
             $esc_name = addslashes($name);
             $esc_user = addslashes($user);
             $esc_pass = addslashes($pass);
-            $esc_mail = addslashes($mail_from);
-            $esc_url  = addslashes($app_url);
+            $esc_mail  = addslashes($mail_from);
+            $esc_url   = addslashes($app_url);
+            $esc_sgkey = addslashes(trim($_POST['sendgrid_key'] ?? ''));
 
             $cfg = <<<'CONFIGTPL'
 <?php
@@ -114,6 +115,7 @@ define('DB_CHARSET', 'utf8mb4');
 define('MAIL_FROM',      '%MAIL%');
 define('MAIL_FROM_NAME', 'Repprogress');
 define('APP_URL',        '%URL%');
+define('SENDGRID_API_KEY', '%SGKEY%');
 
 // ── Session Security ──────────────────────────────────────────────────────────
 ini_set('session.cookie_httponly', 1);
@@ -225,8 +227,8 @@ function is_admin(): bool {
 CONFIGTPL;
 
             $cfg = str_replace(
-                ['%HOST%', '%NAME%', '%USER%', '%PASS%', '%MAIL%', '%URL%'],
-                [$esc_host, $esc_name, $esc_user, $esc_pass, $esc_mail, $esc_url],
+                ['%HOST%', '%NAME%', '%USER%', '%PASS%', '%MAIL%', '%URL%', '%SGKEY%'],
+                [$esc_host, $esc_name, $esc_user, $esc_pass, $esc_mail, $esc_url, $esc_sgkey],
                 $cfg
             );
 
@@ -392,14 +394,20 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
       <div class="field">
         <label>Email From Address <span class="label-hint">for verification emails</span></label>
         <input type="email" name="mail_from"
-          value="<?= htmlspecialchars($_POST['mail_from']??'noreply@yourdomain.com') ?>"
-          placeholder="noreply@yourdomain.com">
+          value="<?= htmlspecialchars($_POST['mail_from']??'noreply@repprogress.com') ?>"
+          placeholder="noreply@repprogress.com">
       </div>
       <div class="field">
         <label>App URL <span class="label-hint">no trailing slash</span></label>
         <input type="url" name="app_url"
           value="<?= htmlspecialchars($_POST['app_url']??'') ?>"
-          placeholder="https://yourdomain.com/repprogress">
+          placeholder="https://repprogress.com">
+      </div>
+      <div class="field">
+        <label>SendGrid API Key <span class="label-hint">for sending verification emails</span></label>
+        <input type="password" name="sendgrid_key"
+          value="<?= htmlspecialchars($_POST['sendgrid_key']??'') ?>"
+          placeholder="SG.xxxxxxxxxx">
       </div>
     </div>
 

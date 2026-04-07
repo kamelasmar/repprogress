@@ -89,13 +89,34 @@ function send_verification_email(string $email, string $token): bool {
              . "This link expires in 24 hours.\n\n"
              . "If you didn't create this account, you can ignore this email.";
 
-    $headers = "From: " . MAIL_FROM_NAME . " <" . MAIL_FROM . ">\r\n"
-             . "Reply-To: " . MAIL_FROM . "\r\n"
-             . "Content-Type: text/plain; charset=UTF-8\r\n"
-             . "X-Mailer: PHP/" . phpversion();
+    return sendgrid_send($email, $subject, $body);
+}
 
-    // For production, consider replacing mail() with PHPMailer for SMTP support.
-    return @mail($email, $subject, $body, $headers);
+function sendgrid_send(string $to, string $subject, string $text_body): bool {
+    $payload = [
+        'personalizations' => [['to' => [['email' => $to]]]],
+        'from'    => ['email' => MAIL_FROM, 'name' => MAIL_FROM_NAME],
+        'subject' => $subject,
+        'content' => [['type' => 'text/plain', 'value' => $text_body]],
+    ];
+
+    $ch = curl_init('https://api.sendgrid.com/v3/mail/send');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . SENDGRID_API_KEY,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $response = curl_exec($ch);
+    $code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    // SendGrid returns 202 Accepted on success
+    return $code >= 200 && $code < 300;
 }
 
 function resend_verification(PDO $db, int $user_id): array {
