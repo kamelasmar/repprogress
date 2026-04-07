@@ -10,16 +10,17 @@ if (is_logged_in()) {
 }
 
 $errors = [];
-$old = ['email' => '', 'phone' => ''];
+$old = ['name' => '', 'email' => '', 'phone' => ''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
+    $name     = trim($_POST['name'] ?? '');
     $email    = trim($_POST['email'] ?? '');
     $phone    = trim($_POST['phone'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm  = $_POST['password_confirm'] ?? '';
-    $old = ['email' => $email, 'phone' => $phone];
+    $old = ['name' => $name, 'email' => $email, 'phone' => $phone];
 
     if ($password !== $confirm) {
         $errors[] = 'Passwords do not match.';
@@ -27,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $db = db();
-        $result = register_user($db, $email, $phone, $password);
+        $result = register_user($db, $email, $phone, $password, $name);
 
         if ($result['ok']) {
             send_verification_email($result['email'], $result['token']);
@@ -65,8 +66,15 @@ render_head('Create Account', '', true);
       <?= csrf_field() ?>
 
       <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" required autofocus
+               value="<?= htmlspecialchars($old['name']) ?>"
+               placeholder="Your name">
+      </div>
+
+      <div class="form-group">
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" required autofocus
+        <input type="email" id="email" name="email" required
                value="<?= htmlspecialchars($old['email']) ?>"
                placeholder="you@example.com">
       </div>

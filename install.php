@@ -33,19 +33,20 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['step'] ?? '') === 'admin') {
         require_once __DIR__.'/includes/auth.php';
         $pdo = db();
 
+        $name  = trim($_POST['admin_name'] ?? '');
         $email = trim($_POST['admin_email'] ?? '');
         $phone = trim($_POST['admin_phone'] ?? '');
         $pass  = $_POST['admin_pass'] ?? '';
         $pass2 = $_POST['admin_pass2'] ?? '';
 
-        if (!$email || !$phone || !$pass) {
+        if (!$name || !$email || !$phone || !$pass) {
             $errors[] = 'All fields are required.';
         } elseif ($pass !== $pass2) {
             $errors[] = 'Passwords do not match.';
         } elseif (strlen($pass) < 8) {
             $errors[] = 'Password must be at least 8 characters.';
         } else {
-            $result = register_user($pdo, $email, $phone, $pass);
+            $result = register_user($pdo, $email, $phone, $pass, $name);
             if ($result['ok']) {
                 $admin_id = $result['user_id'];
                 // Mark as admin and pre-verified
@@ -317,6 +318,12 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
 
   <form method="post">
     <input type="hidden" name="step" value="admin">
+    <div class="field">
+      <label>Full Name</label>
+      <input type="text" name="admin_name"
+        value="<?= htmlspecialchars($_POST['admin_name']??'') ?>"
+        placeholder="Your name" required>
+    </div>
     <div class="field">
       <label>Email Address</label>
       <input type="email" name="admin_email"

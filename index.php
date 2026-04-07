@@ -66,8 +66,8 @@ if($ap && $ap['start_date']){
     $plan_pct=min(100,round($plan_week/$ap['weeks_duration']*100));
 }
 
-// Greeting name from email
-$greeting_name = explode('@', $cu['email'] ?? '')[0];
+// Greeting name: prefer name, fall back to email prefix
+$greeting_name = $cu['name'] ?: explode('@', $cu['email'] ?? '')[0];
 
 render_head('Dashboard','index');
 ?>

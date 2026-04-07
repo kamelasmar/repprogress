@@ -10,8 +10,13 @@ $token = $_GET['token'] ?? '';
 if ($token) {
     $result = verify_email($db, $token);
     if ($result['ok']) {
-        flash('Email verified! You can now sign in.', 'success');
-        header('Location: login.php');
+        if (!empty($result['email_changed'])) {
+            flash('Email address updated successfully!', 'success');
+            header('Location: account.php');
+        } else {
+            flash('Email verified! You can now sign in.', 'success');
+            header('Location: login.php');
+        }
     } else {
         flash($result['error'], 'error');
         header('Location: login.php');

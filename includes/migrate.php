@@ -117,4 +117,15 @@ function run_migrations(PDO $db): void {
             $db->exec("ALTER TABLE weight_log ADD COLUMN muscle_mass_pct DECIMAL(4,1) DEFAULT NULL");
         }
     } catch (Exception $e) {}
+
+    // ── Add name and pending_email to users ─────────────────────────
+    try {
+        $ucols = $db->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('name', $ucols)) {
+            $db->exec("ALTER TABLE users ADD COLUMN name VARCHAR(100) DEFAULT NULL");
+        }
+        if (!in_array('pending_email', $ucols)) {
+            $db->exec("ALTER TABLE users ADD COLUMN pending_email VARCHAR(255) DEFAULT NULL");
+        }
+    } catch (Exception $e) {}
 }

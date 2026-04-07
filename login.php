@@ -44,7 +44,8 @@ render_head('Sign In', '', true);
 <div class="auth-box">
   <div style="text-align:center;margin-bottom:2rem">
     <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Repprogress</div>
-    <div style="color:var(--muted);font-size:14px;margin-top:4px">Sign in to your account</div>
+    <div style="color:var(--accent-text);font-size:14px;margin-top:6px;font-weight:500">Track every rep. Own every side. See the progress.</div>
+    <div style="color:var(--muted);font-size:13px;margin-top:8px">Sign in to your account</div>
   </div>
 
   <?php if ($error): ?>

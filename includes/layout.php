@@ -400,12 +400,18 @@ else: ?>
   $cu = current_user();
   if ($cu): ?>
   <div style="margin-top:auto;padding-top:1rem;border-top:1px solid var(--border)">
+    <?php if ($cu['name']): ?>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px"><?= htmlspecialchars($cu['name']) ?></div>
+    <?php endif; ?>
     <div style="font-size:12px;color:var(--muted);margin-bottom:6px;word-break:break-all">
       <?= htmlspecialchars($cu['email']) ?>
       <?php if ($cu['is_admin']): ?>
         <span class="badge badge-admin" style="margin-left:4px">Admin</span>
       <?php endif; ?>
     </div>
+    <a href="account.php" class="nav-link">
+      <span class="nav-icon">&#9881;</span>Account
+    </a>
     <a href="logout.php" class="nav-link" style="color:var(--red-text)">
       <span class="nav-icon">&#128682;</span>Logout
     </a>

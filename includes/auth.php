@@ -3,7 +3,8 @@
  * auth.php — Registration, login, email verification, and auth helpers.
  */
 
-function register_user(PDO $db, string $email, string $phone, string $password): array {
+function register_user(PDO $db, string $email, string $phone, string $password, string $name = ''): array {
+    $name = trim($name);
     $email = strtolower(trim($email));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         return ['ok' => false, 'error' => 'Invalid email address.'];
@@ -28,8 +29,8 @@ function register_user(PDO $db, string $email, string $phone, string $password):
     $expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
     try {
-        $st = $db->prepare("INSERT INTO users (email, phone, password_hash, verification_token, verification_expires) VALUES (?, ?, ?, ?, ?)");
-        $st->execute([$email, $phone, $hash, $token, $expires]);
+        $st = $db->prepare("INSERT INTO users (email, phone, password_hash, verification_token, verification_expires, name) VALUES (?, ?, ?, ?, ?, ?)");
+        $st->execute([$email, $phone, $hash, $token, $expires, $name ?: null]);
     } catch (PDOException $e) {
         // Unique constraint race condition
         if ($e->getCode() == 23000) {
@@ -72,6 +73,13 @@ function verify_email(PDO $db, string $token): array {
 
     if (!$user) {
         return ['ok' => false, 'error' => 'Invalid or expired verification link.'];
+    }
+
+    // Handle email change verification
+    if (!empty($user['pending_email'])) {
+        $db->prepare("UPDATE users SET email = ?, pending_email = NULL, email_verified = 1, verification_token = NULL, verification_expires = NULL WHERE id = ?")
+           ->execute([$user['pending_email'], $user['id']]);
+        return ['ok' => true, 'user_id' => (int)$user['id'], 'email_changed' => true];
     }
 
     $db->prepare("UPDATE users SET email_verified = 1, verification_token = NULL, verification_expires = NULL WHERE id = ?")
@@ -149,4 +157,53 @@ function resend_verification(PDO $db, int $user_id): array {
 
     $sent = send_verification_email($user['email'], $token);
     return ['ok' => $sent, 'error' => $sent ? null : 'Failed to send email. Please try again.'];
+}
+
+function request_email_change(PDO $db, int $user_id, string $new_email): array {
+    $new_email = strtolower(trim($new_email));
+    if (!filter_var($new_email, FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'error' => 'Invalid email address.'];
+    }
+
+    // Check if already taken
+    $st = $db->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+    $st->execute([$new_email, $user_id]);
+    if ($st->fetch()) {
+        return ['ok' => false, 'error' => 'This email is already in use.'];
+    }
+
+    $token   = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+    $db->prepare("UPDATE users SET pending_email = ?, verification_token = ?, verification_expires = ? WHERE id = ?")
+       ->execute([$new_email, $token, $expires, $user_id]);
+
+    $link    = APP_URL . '/verify.php?token=' . urlencode($token);
+    $subject = 'Confirm your new email — Repprogress';
+    $body    = "You requested to change your email to this address.\n\n"
+             . "Click the link below to confirm:\n\n"
+             . $link . "\n\n"
+             . "This link expires in 24 hours.\n\n"
+             . "If you didn't request this, you can ignore this email.";
+
+    $sent = sendgrid_send($new_email, $subject, $body);
+    return ['ok' => $sent, 'error' => $sent ? null : 'Failed to send verification email.'];
+}
+
+function change_password(PDO $db, int $user_id, string $current, string $new_password): array {
+    if (strlen($new_password) < 8) {
+        return ['ok' => false, 'error' => 'New password must be at least 8 characters.'];
+    }
+
+    $st = $db->prepare("SELECT password_hash FROM users WHERE id = ?");
+    $st->execute([$user_id]);
+    $user = $st->fetch();
+
+    if (!$user || !password_verify($current, $user['password_hash'])) {
+        return ['ok' => false, 'error' => 'Current password is incorrect.'];
+    }
+
+    $hash = password_hash($new_password, PASSWORD_DEFAULT);
+    $db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hash, $user_id]);
+
+    return ['ok' => true];
 }
