@@ -332,7 +332,7 @@ render_head('AI Workout Builder', 'plans');
         ?>
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:400;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
           <input type="checkbox" name="focus_areas[]" value="<?= $fo ?>" <?= in_array($fo, $selected_focus) ? 'checked' : '' ?>
-            style="width:auto;accent-color:var(--accent)">
+            style="width:auto;accent-color:var(--accent);-webkit-appearance:checkbox;appearance:checkbox">
           <?= $fo ?>
         </label>
         <?php endforeach; ?>
