@@ -47,9 +47,14 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['step'] ?? '') === 'admin') {
         } else {
             $result = register_user($pdo, $email, $phone, $pass);
             if ($result['ok']) {
+                $admin_id = $result['user_id'];
                 // Mark as admin and pre-verified
                 $pdo->prepare("UPDATE users SET is_admin=1, email_verified=1, verification_token=NULL, verification_expires=NULL WHERE id=?")
-                    ->execute([$result['user_id']]);
+                    ->execute([$admin_id]);
+                // Assign any seeded data (plans, sessions, weight, sets) to the admin
+                foreach (['plans', 'sessions', 'sets_log', 'weight_log'] as $tbl) {
+                    $pdo->prepare("UPDATE $tbl SET user_id=? WHERE user_id IS NULL")->execute([$admin_id]);
+                }
                 $success = true;
                 $step = 'done';
             } else {
