@@ -5,7 +5,7 @@ function render_head(string $title, string $active = '', bool $auth_page = false
         'log'      => ['Log',         'log.php',      '&#127947;&#65039;'],
         'weight'   => ['Body',      'weight.php',   '&#9878;&#65039;'],
         'exercises'=> ['Exercises',   'exercises.php', '&#128203;'],
-        'plans'    => ['Plans',       'plan_manager.php', '&#128451;'],
+        'plans'    => ['Plans',       'plan_manager.php', '&#128221;'],
         'schedule' => ['Schedule',    'schedule.php',  '&#128197;'],
     ];
     ?>
@@ -434,12 +434,13 @@ function render_foot(bool $auth_page = false): void {
       'log'      => ['Log',       'log.php',      '&#127947;&#65039;'],
       'weight'   => ['Body',    'weight.php',   '&#9878;&#65039;'],
       'exercises'=> ['Exercises', 'exercises.php', '&#128203;'],
-      'plans'    => ['Plans',     'plan_manager.php', '&#128451;'],
+      'plans'    => ['Plans',     'plan_manager.php', '&#128221;'],
       'schedule' => ['Schedule',  'schedule.php',  '&#128197;'],
+      'account'  => ['Account',   'account.php',   '&#9881;'],
   ];
   // Detect active page from current script
   $current = basename($_SERVER['PHP_SELF'], '.php');
-  $map = ['index'=>'index','log'=>'log','weight'=>'weight','exercises'=>'exercises','plan_manager'=>'plans','plan_builder'=>'plans','schedule'=>'schedule'];
+  $map = ['index'=>'index','log'=>'log','weight'=>'weight','exercises'=>'exercises','plan_manager'=>'plans','plan_builder'=>'plans','schedule'=>'schedule','account'=>'account'];
   $active = $map[$current] ?? '';
   ?>
 </main>
