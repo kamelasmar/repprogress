@@ -152,4 +152,18 @@ function run_migrations(PDO $db): void {
             FOREIGN KEY (granted_to) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     } catch (Exception $e) {}
+
+    // ── Assign orphaned data to first admin ─────────────────────────
+    try {
+        $orphans = $db->query("SELECT COUNT(*) FROM plans WHERE user_id IS NULL")->fetchColumn();
+        if ($orphans > 0) {
+            $admin = $db->query("SELECT id FROM users WHERE is_admin=1 ORDER BY id LIMIT 1")->fetch();
+            if ($admin) {
+                $aid = $admin['id'];
+                foreach (['plans', 'sessions', 'sets_log', 'weight_log'] as $tbl) {
+                    $db->exec("UPDATE $tbl SET user_id=$aid WHERE user_id IS NULL");
+                }
+            }
+        }
+    } catch (Exception $e) {}
 }
