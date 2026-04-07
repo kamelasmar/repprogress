@@ -21,25 +21,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'generate') {
         $form = [
             'plan_name'    => trim($_POST['plan_name'] ?? ''),
-            'goal'         => $_POST['goal'] ?? 'general_fitness',
-            'experience'   => $_POST['experience'] ?? 'intermediate',
+            'goal'         => in_array($_POST['goal'] ?? '', ['strength','hypertrophy','mobility','general_fitness']) ? $_POST['goal'] : 'general_fitness',
+            'experience'   => in_array($_POST['experience'] ?? '', ['beginner','intermediate','advanced']) ? $_POST['experience'] : 'intermediate',
             'days_per_week'=> max(1, min(7, (int)($_POST['days_per_week'] ?? 3))),
-            'equipment'    => $_POST['equipment'] ?? 'full_gym',
-            'duration'     => $_POST['duration'] ?? '60',
-            'focus_areas'  => $_POST['focus_areas'] ?? [],
+            'equipment'    => in_array($_POST['equipment'] ?? '', ['full_gym','home_gym','minimal']) ? $_POST['equipment'] : 'full_gym',
+            'duration'     => in_array($_POST['duration'] ?? '', ['30','45','60','90']) ? $_POST['duration'] : '60',
+            'focus_areas'  => array_values(array_intersect($_POST['focus_areas'] ?? [], ['Upper Body','Lower Body','Core','Full Body','Mobility'])),
             'details'      => trim($_POST['details'] ?? ''),
         ];
 
         // Validate
-        if (!$form['plan_name']) {
-            flash('Plan name is required.', 'error');
+        if (!$form['plan_name'] || mb_strlen($form['plan_name']) > 100) {
+            flash('Plan name is required and must be under 100 characters.', 'error');
             $_SESSION['ai_form'] = $form;
             header('Location: ai_builder.php'); exit;
         }
 
-        // Profanity check on free-text
-        if ($form['details'] && contains_profanity($form['details'])) {
-            flash('Please remove inappropriate language from the additional details field.', 'error');
+        // Profanity check on user text
+        if (contains_profanity($form['plan_name']) || ($form['details'] && contains_profanity($form['details']))) {
+            flash('Please remove inappropriate language.', 'error');
             $_SESSION['ai_form'] = $form;
             header('Location: ai_builder.php'); exit;
         }
@@ -186,6 +186,7 @@ PROMPT;
             }
         }
 
+        unset($_SESSION['ai_form']);
         $_SESSION['ai_preview'] = [
             'form' => $form,
             'days' => $preview_days,
@@ -204,26 +205,35 @@ PROMPT;
         $form = $preview['form'];
         $days = $preview['days'];
 
-        // Create the plan
-        $start = date('Y-m-d');
-        $weeks = 8;
-        $end = date('Y-m-d', strtotime("+{$weeks} weeks"));
-        $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active, user_id) VALUES (?,?,1,?,?,?,0,?)")
-           ->execute([$form['plan_name'], 'AI-generated plan: ' . ucfirst(str_replace('_', ' ', $form['goal'])), $weeks, $start, $end, $uid]);
-        $plan_id = (int)$db->lastInsertId();
+        $db->beginTransaction();
+        try {
+            // Create the plan
+            $start = date('Y-m-d');
+            $weeks = 8;
+            $end = date('Y-m-d', strtotime("+{$weeks} weeks"));
+            $goal_label = ucfirst(str_replace('_', ' ', $form['goal']));
+            $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active, user_id) VALUES (?,?,1,?,?,?,0,?)")
+               ->execute([$form['plan_name'], 'AI-generated plan: ' . $goal_label, $weeks, $start, $end, $uid]);
+            $plan_id = (int)$db->lastInsertId();
 
-        // Create days and exercises
-        foreach ($days as $d_idx => $day) {
-            $db->prepare("INSERT INTO plan_days (plan_id, day_label, day_title, day_order) VALUES (?,?,?,?)")
-               ->execute([$plan_id, $day['day_label'], $day['day_title'], $d_idx + 1]);
+            // Create days and exercises
+            foreach ($days as $d_idx => $day) {
+                $db->prepare("INSERT INTO plan_days (plan_id, day_label, day_title, day_order) VALUES (?,?,?,?)")
+                   ->execute([$plan_id, $day['day_label'], $day['day_title'], $d_idx + 1]);
 
-            foreach ($day['sections'] as $s_idx => $sec) {
-                foreach ($sec['exercises'] as $e_idx => $ex) {
-                    $exercise_id = match_exercise($db, $ex['name'], $ex['muscle_group'], $ex['coach_tip'], $uid);
-                    $db->prepare("INSERT INTO plan_exercises (plan_id, day_label, exercise_id, section, section_order, sort_order, sets_target, reps_target) VALUES (?,?,?,?,?,?,?,?)")
-                       ->execute([$plan_id, $day['day_label'], $exercise_id, $sec['name'], $s_idx, $e_idx + 1, $ex['sets'], $ex['reps']]);
+                foreach ($day['sections'] as $s_idx => $sec) {
+                    foreach ($sec['exercises'] as $e_idx => $ex) {
+                        $exercise_id = match_exercise($db, $ex['name'], $ex['muscle_group'], $ex['coach_tip'], $uid);
+                        $db->prepare("INSERT INTO plan_exercises (plan_id, day_label, exercise_id, section, section_order, sort_order, sets_target, reps_target) VALUES (?,?,?,?,?,?,?,?)")
+                           ->execute([$plan_id, $day['day_label'], $exercise_id, $sec['name'], $s_idx, $e_idx + 1, $ex['sets'], $ex['reps']]);
+                    }
                 }
             }
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            flash('Failed to create plan. Please try again.', 'error');
+            header('Location: ai_builder.php?step=preview'); exit;
         }
 
         unset($_SESSION['ai_preview'], $_SESSION['ai_form']);
@@ -348,17 +358,17 @@ document.getElementById('ai-form').addEventListener('submit', function() {
 <div class="page-header">
   <div class="page-title">Preview: <?= htmlspecialchars($pform['plan_name']) ?></div>
   <div class="page-sub">
-    <?= ucfirst(str_replace('_', ' ', $pform['goal'])) ?> &middot;
-    <?= $pform['days_per_week'] ?> days/week &middot;
-    <?= ucfirst($pform['experience']) ?> &middot;
-    <?= $pform['duration'] ?> min sessions
+    <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $pform['goal']))) ?> &middot;
+    <?= (int)$pform['days_per_week'] ?> days/week &middot;
+    <?= htmlspecialchars(ucfirst($pform['experience'])) ?> &middot;
+    <?= htmlspecialchars($pform['duration']) ?> min sessions
   </div>
 </div>
 
 <?php foreach ($pdays as $d_idx => $day): ?>
 <div class="card" style="margin-bottom:1rem">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer" onclick="this.parentElement.querySelector('.day-content').classList.toggle('collapsed')">
-    <?= day_pill($day['day_label']) ?>
+    <?= day_pill(htmlspecialchars($day['day_label'])) ?>
     <span style="font-size:16px;font-weight:700;color:var(--text)"><?= htmlspecialchars($day['day_title']) ?></span>
   </div>
   <div class="day-content">
