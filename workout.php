@@ -57,6 +57,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $_SESSION['last_submit_token'] = $submit_token;
 
+        // Validate required fields
+        $ex_id = (int)($_POST['exercise_id'] ?? 0);
+        $set_num = (int)($_POST['set_number'] ?? 0);
+        if (!$ex_id || !$set_num) {
+            flash('Exercise and set number are required.', 'error');
+            header("Location: workout.php?day=".urlencode($active_day)); exit;
+        }
+
         // Get or create session
         $session_id = (int)($_POST['session_id'] ?? 0);
         if (!$session_id) {
@@ -74,9 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $db->prepare("INSERT INTO sets_log (session_id, exercise_id, set_number, reps, weight_kg, duration_sec, side, notes, user_id) VALUES (?,?,?,?,?,?,?,?,?)")
-           ->execute([$session_id, $_POST['exercise_id'], $_POST['set_number'],
+           ->execute([$session_id, $ex_id, $set_num,
                       $_POST['reps'] ?: null, $_POST['weight_kg'] ?: null,
-                      $_POST['duration_sec'] ?: null, $_POST['side'],
+                      $_POST['duration_sec'] ?: null, $_POST['side'] ?: 'both',
                       $_POST['notes'] ?: null, $uid]);
         flash('Set logged!');
         header("Location: workout.php?day=".urlencode($active_day)."#ex-".$_POST['exercise_id']); exit;
@@ -277,7 +285,7 @@ render_head('Workout', 'workout');
     <input type="hidden" name="day" value="<?= htmlspecialchars($active_day) ?>">
     <div style="width:50px">
       <label style="font-size:10px">#</label>
-      <input type="number" name="set_number" value="<?= $next_set ?>" min="1" style="padding:7px 6px;font-size:13px">
+      <input type="number" name="set_number" value="<?= $next_set ?>" min="1" required style="padding:7px 6px;font-size:13px">
     </div>
     <div style="width:65px">
       <label style="font-size:10px">Reps</label>

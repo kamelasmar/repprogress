@@ -134,4 +134,9 @@ function run_migrations(PDO $db): void {
             $db->exec("ALTER TABLE users ADD COLUMN country VARCHAR(2) DEFAULT NULL");
         }
     } catch (Exception $e) {}
+
+    // ── Rename "Hip Mobility" section to "Mobility" ─────────────────
+    try {
+        $db->exec("UPDATE plan_exercises SET section='Mobility' WHERE section='Hip Mobility'");
+    } catch (Exception $e) {}
 }

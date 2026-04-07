@@ -10,12 +10,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'log_weight') {
+        $log_date = trim($_POST['logged_date'] ?? '');
+        $log_weight = trim($_POST['weight_kg'] ?? '');
+        if (!$log_date || !$log_weight) {
+            flash('Date and weight are required.', 'error');
+            header("Location: weight.php"); exit;
+        }
         $st = $db->prepare("INSERT INTO weight_log (logged_date, weight_kg, body_fat_pct, muscle_mass_pct, notes, user_id)
             VALUES (?,?,?,?,?,?)
             ON DUPLICATE KEY UPDATE weight_kg=VALUES(weight_kg), body_fat_pct=VALUES(body_fat_pct), muscle_mass_pct=VALUES(muscle_mass_pct), notes=VALUES(notes)");
         $st->execute([
-            $_POST['logged_date'],
-            $_POST['weight_kg'],
+            $log_date,
+            $log_weight,
             $_POST['body_fat_pct'] ?: null,
             $_POST['muscle_mass_pct'] ?: null,
             $_POST['notes'] ?: null,

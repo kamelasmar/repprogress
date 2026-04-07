@@ -21,10 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Create new plan (blank)
     if ($action === 'create') {
+        $plan_name = trim($_POST['name'] ?? '');
+        if (!$plan_name) {
+            flash('Plan name is required.', 'error');
+            header("Location: plan_manager.php"); exit;
+        }
         $start = $_POST['start_date'] ?: date('Y-m-d');
-        $end   = date('Y-m-d', strtotime($start . ' + ' . (int)$_POST['weeks_duration'] . ' weeks'));
+        $weeks = max(1, (int)($_POST['weeks_duration'] ?? 8));
+        $end   = date('Y-m-d', strtotime("$start + $weeks weeks"));
         $db->prepare("INSERT INTO plans (name, description, phase_number, weeks_duration, start_date, end_date, is_active, user_id) VALUES (?,?,?,?,?,?,0,?)")
-           ->execute([$_POST['name'], $_POST['description'], $_POST['phase_number'], $_POST['weeks_duration'], $start, $end, $uid]);
+           ->execute([$plan_name, $_POST['description'] ?? '', $_POST['phase_number'] ?? 1, $weeks, $start, $end, $uid]);
         $new_id = $db->lastInsertId();
         // Seed days based on selected count
         $num_days = max(1, min(7, (int)($_POST['num_days'] ?? 3)));

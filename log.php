@@ -12,13 +12,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'create_session') {
+        $session_date = trim($_POST['session_date'] ?? '');
+        $day_label    = trim($_POST['day_label'] ?? '');
+        if (!$session_date || !$day_label) {
+            flash('Date and day are required.', 'error');
+            header("Location: log.php?new=1"); exit;
+        }
         $ap = active_plan();
-        // Look up day title from plan_days
         $dt_st = $db->prepare("SELECT day_title FROM plan_days WHERE plan_id=? AND day_label=?");
-        $dt_st->execute([$ap['id'] ?? 0, $_POST['day_label']]);
-        $dt = $dt_st->fetchColumn() ?: $_POST['day_label'];
+        $dt_st->execute([$ap['id'] ?? 0, $day_label]);
+        $dt = $dt_st->fetchColumn() ?: $day_label;
         $db->prepare("INSERT INTO sessions (session_date,day_label,title,plan_id,duration_min,notes,user_id) VALUES (?,?,?,?,?,?,?)")
-           ->execute([$_POST['session_date'],$_POST['day_label'],$dt,$ap['id']??null,$_POST['duration_min']?:null,$_POST['notes']?:null,$uid]);
+           ->execute([$session_date,$day_label,$dt,$ap['id']??null,$_POST['duration_min']?:null,$_POST['notes']?:null,$uid]);
         $sid = $db->lastInsertId();
         flash('Session created!');
         header("Location: log.php?session_id=$sid"); exit;
@@ -32,15 +37,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $_SESSION['last_submit_token'] = $submit_token;
 
+        // Validate required fields
+        $sess_id = (int)($_POST['session_id'] ?? 0);
+        $ex_id   = (int)($_POST['exercise_id'] ?? 0);
+        $set_num = (int)($_POST['set_number'] ?? 0);
+        if (!$sess_id || !$ex_id || !$set_num) {
+            flash('Session, exercise, and set number are required.', 'error');
+            header("Location: log.php?session_id=".$sess_id); exit;
+        }
+
         // Verify session ownership
         $own = $db->prepare("SELECT id FROM sessions WHERE id=? AND user_id=?");
-        $own->execute([$_POST['session_id'], $uid]);
+        $own->execute([$sess_id, $uid]);
         if ($own->fetch()) {
             $db->prepare("INSERT INTO sets_log (session_id,exercise_id,set_number,reps,weight_kg,duration_sec,side,notes,user_id) VALUES (?,?,?,?,?,?,?,?,?)")
-               ->execute([$_POST['session_id'],$_POST['exercise_id'],$_POST['set_number'],$_POST['reps']?:null,$_POST['weight_kg']?:null,$_POST['duration_sec']?:null,$_POST['side'],$_POST['notes']?:null,$uid]);
+               ->execute([$sess_id,$ex_id,$set_num,$_POST['reps']?:null,$_POST['weight_kg']?:null,$_POST['duration_sec']?:null,$_POST['side']?:'both',$_POST['notes']?:null,$uid]);
             flash('Set logged!');
         }
-        header("Location: log.php?session_id=".$_POST['session_id']); exit;
+        header("Location: log.php?session_id=".$sess_id); exit;
     }
     if ($action === 'delete_set') {
         $db->prepare("DELETE FROM sets_log WHERE id=? AND user_id=?")->execute([$_POST['set_id'], $uid]);

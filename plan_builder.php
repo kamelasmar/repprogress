@@ -20,9 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_exercise') {
-        $ex_id = (int)$_POST['exercise_id'];
-        $day   = $_POST['day_label'];
-        $sec   = $_POST['section'];
+        $ex_id = (int)($_POST['exercise_id'] ?? 0);
+        $day   = trim($_POST['day_label'] ?? '');
+        $sec   = trim($_POST['section'] ?? 'Main Work');
+        if (!$ex_id || !$day) {
+            flash('Please select an exercise.', 'error');
+            header("Location: plan_builder.php?plan_id=$plan_id&day=".urlencode($day ?: 'Day 1')); exit;
+        }
         // Prevent duplicate: check if this exercise is already in this day+section
         $dup = $db->prepare("SELECT COUNT(*) FROM plan_exercises WHERE plan_id=? AND day_label=? AND exercise_id=? AND section=?");
         $dup->execute([$plan_id, $day, $ex_id, $sec]);
@@ -117,7 +121,7 @@ $all_ex = $all_ex_st->fetchAll();
 $ex_by_mg = [];
 foreach ($all_ex as $e) $ex_by_mg[$e['muscle_group']][] = $e;
 
-$sections = ['Cardio Warm-Up','Hip Mobility','Core Block A','Activation','Main Work','Functional','Finisher','Core Block B','Cool-Down','Reset'];
+$sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation','Main Work','Functional','Finisher','Core Block B','Cool-Down','Reset'];
 // Day pill numbers derived dynamically from label
 
 render_head('Plan Builder — '.$plan['name'], 'plans');
@@ -315,7 +319,7 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
         <label>Section</label>
         <select name="section" id="section-sel" onchange="updateSectionOrder(this.value)">
           <?php
-          $section_orders = ['Cardio Warm-Up'=>1,'Hip Mobility'=>2,'Core Block A'=>3,'Activation'=>4,'Main Work'=>5,'Functional'=>6,'Finisher'=>7,'Core Block B'=>8,'Cool-Down'=>9,'Reset'=>10];
+          $section_orders = ['Cardio Warm-Up'=>1,'Mobility'=>2,'Stretching'=>3,'Core Block A'=>4,'Activation'=>5,'Main Work'=>6,'Functional'=>7,'Finisher'=>8,'Core Block B'=>9,'Cool-Down'=>10,'Reset'=>11];
           foreach ($sections as $s):
           ?>
           <option value="<?= $s ?>"><?= $s ?></option>
