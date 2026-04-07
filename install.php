@@ -49,9 +49,11 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['step'] ?? '') === 'admin') {
             $result = register_user($pdo, $email, $phone, $pass, $name);
             if ($result['ok']) {
                 $admin_id = $result['user_id'];
-                // Mark as admin and pre-verified
-                $pdo->prepare("UPDATE users SET is_admin=1, email_verified=1, verification_token=NULL, verification_expires=NULL WHERE id=?")
-                    ->execute([$admin_id]);
+                // Mark as admin and pre-verified, save DOB and country
+                $admin_dob = $_POST['admin_dob'] ?? '';
+                $admin_country = $_POST['admin_country'] ?? '';
+                $pdo->prepare("UPDATE users SET is_admin=1, email_verified=1, verification_token=NULL, verification_expires=NULL, date_of_birth=?, country=? WHERE id=?")
+                    ->execute([$admin_dob ?: null, $admin_country ?: null, $admin_id]);
                 // Assign any seeded data (plans, sessions, weight, sets) to the admin
                 foreach (['plans', 'sessions', 'sets_log', 'weight_log'] as $tbl) {
                     $pdo->prepare("UPDATE $tbl SET user_id=? WHERE user_id IS NULL")->execute([$admin_id]);
@@ -335,6 +337,24 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
       <input type="tel" name="admin_phone"
         value="<?= htmlspecialchars($_POST['admin_phone']??'') ?>"
         placeholder="+1 (555) 123-4567" required>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div class="field" style="flex:1">
+        <label>Date of Birth</label>
+        <input type="date" name="admin_dob"
+          value="<?= htmlspecialchars($_POST['admin_dob']??'') ?>">
+      </div>
+      <div class="field" style="flex:1">
+        <label>Country</label>
+        <select name="admin_country" style="width:100%;padding:10px 12px;border:1px solid #e8e6e0;border-radius:8px;font-size:14px;color:#1a1916;font-family:inherit">
+          <option value="">-- Select --</option>
+          <?php
+          require_once __DIR__.'/includes/layout.php';
+          foreach (get_countries() as $code => $cname): ?>
+          <option value="<?= $code ?>" <?= ($_POST['admin_country']??'')===$code?'selected':'' ?>><?= htmlspecialchars($cname) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
     </div>
     <div class="field">
       <label>Password <span class="label-hint">at least 8 characters</span></label>

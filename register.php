@@ -10,7 +10,7 @@ if (is_logged_in()) {
 }
 
 $errors = [];
-$old = ['name' => '', 'email' => '', 'phone' => ''];
+$old = ['name' => '', 'email' => '', 'phone' => '', 'dob' => '', 'country' => ''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -18,9 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name     = trim($_POST['name'] ?? '');
     $email    = trim($_POST['email'] ?? '');
     $phone    = trim($_POST['phone'] ?? '');
+    $dob      = $_POST['date_of_birth'] ?? '';
+    $country  = $_POST['country'] ?? '';
     $password = $_POST['password'] ?? '';
     $confirm  = $_POST['password_confirm'] ?? '';
-    $old = ['name' => $name, 'email' => $email, 'phone' => $phone];
+    $old = ['name' => $name, 'email' => $email, 'phone' => $phone, 'dob' => $dob, 'country' => $country];
 
     if ($password !== $confirm) {
         $errors[] = 'Passwords do not match.';
@@ -31,6 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = register_user($db, $email, $phone, $password, $name);
 
         if ($result['ok']) {
+            // Save DOB and country
+            if ($dob || $country) {
+                $db->prepare("UPDATE users SET date_of_birth=?, country=? WHERE id=?")
+                   ->execute([$dob ?: null, $country ?: null, $result['user_id']]);
+            }
             send_verification_email($result['email'], $result['token']);
             // Log the user in so they can access verify.php
             session_regenerate_id(true);
@@ -84,6 +91,23 @@ render_head('Create Account', '', true);
         <input type="tel" id="phone" name="phone" required
                value="<?= htmlspecialchars($old['phone']) ?>"
                placeholder="+1 (555) 123-4567">
+      </div>
+
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label for="dob">Date of Birth</label>
+          <input type="date" id="dob" name="date_of_birth"
+                 value="<?= htmlspecialchars($old['dob']) ?>">
+        </div>
+        <div class="form-group">
+          <label for="country">Country</label>
+          <select id="country" name="country">
+            <option value="">-- Select --</option>
+            <?php foreach (get_countries() as $code => $name): ?>
+            <option value="<?= $code ?>" <?= ($old['country'] ?? '')===$code?'selected':'' ?>><?= htmlspecialchars($name) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
       </div>
 
       <div class="form-group">

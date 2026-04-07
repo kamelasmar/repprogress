@@ -127,5 +127,11 @@ function run_migrations(PDO $db): void {
         if (!in_array('pending_email', $ucols)) {
             $db->exec("ALTER TABLE users ADD COLUMN pending_email VARCHAR(255) DEFAULT NULL");
         }
+        if (!in_array('date_of_birth', $ucols)) {
+            $db->exec("ALTER TABLE users ADD COLUMN date_of_birth DATE DEFAULT NULL");
+        }
+        if (!in_array('country', $ucols)) {
+            $db->exec("ALTER TABLE users ADD COLUMN country VARCHAR(2) DEFAULT NULL");
+        }
     } catch (Exception $e) {}
 }

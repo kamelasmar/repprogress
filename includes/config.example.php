@@ -92,7 +92,7 @@ function current_user(): ?array {
     if ($user === false) {
         $uid = current_user_id();
         if ($uid) {
-            $st = db()->prepare("SELECT id, name, email, phone, email_verified, is_admin, pending_email, created_at, last_login FROM users WHERE id = ?");
+            $st = db()->prepare("SELECT id, name, email, phone, email_verified, is_admin, pending_email, date_of_birth, country, created_at, last_login FROM users WHERE id = ?");
             $st->execute([$uid]);
             $user = $st->fetch() ?: null;
         } else {

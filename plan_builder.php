@@ -20,18 +20,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_exercise') {
+        $ex_id = (int)$_POST['exercise_id'];
+        $day   = $_POST['day_label'];
+        $sec   = $_POST['section'];
+        // Prevent duplicate: check if this exercise is already in this day+section
+        $dup = $db->prepare("SELECT COUNT(*) FROM plan_exercises WHERE plan_id=? AND day_label=? AND exercise_id=? AND section=?");
+        $dup->execute([$plan_id, $day, $ex_id, $sec]);
+        if ($dup->fetchColumn() > 0) {
+            flash('This exercise is already in this section.', 'error');
+            header("Location: plan_builder.php?plan_id=$plan_id&day=".urlencode($day)); exit;
+        }
         // Get current max sort_order for this section
         $max = $db->prepare("SELECT COALESCE(MAX(sort_order),0) FROM plan_exercises WHERE plan_id=? AND day_label=? AND section=?");
-        $max->execute([$plan_id, $_POST['day_label'], $_POST['section']]);
+        $max->execute([$plan_id, $day, $sec]);
         $next = $max->fetchColumn() + 1;
         $db->prepare("INSERT INTO plan_exercises (plan_id,day_label,exercise_id,section,section_order,sort_order,sets_target,reps_target,sets_left,reps_left_bonus,is_left_priority,both_sides,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
-           ->execute([$plan_id,$_POST['day_label'],$_POST['exercise_id'],$_POST['section'],
+           ->execute([$plan_id,$day,$ex_id,$sec,
              (int)$_POST['section_order'],$next,$_POST['sets_target'],$_POST['reps_target'],
              (int)($_POST['sets_left']??0),(int)($_POST['reps_left_bonus']??0),
              isset($_POST['is_left_priority'])?1:0,isset($_POST['both_sides'])?1:0,
              $_POST['notes']??null]);
         flash('Exercise added.');
-        header("Location: plan_builder.php?plan_id=$plan_id&day=".$_POST['day_label']); exit;
+        header("Location: plan_builder.php?plan_id=$plan_id&day=".urlencode($day)); exit;
     }
 
     if ($action === 'update_exercise') {
@@ -336,7 +346,7 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
         <label>Notes (optional)</label>
         <input type="text" name="notes" placeholder="e.g. 6 rounds, 20s/40s">
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%">Add to <?= $active_day ?></button>
+      <button type="submit" class="btn btn-primary" style="width:100%" onclick="this.disabled=true;this.form.submit()">Add to <?= $active_day ?></button>
     </form>
   </div>
 </div>

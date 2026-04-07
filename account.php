@@ -11,11 +11,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'update_profile') {
-        $name  = trim($_POST['name'] ?? '');
-        $phone = preg_replace('/[^0-9+\-\s()]/', '', trim($_POST['phone'] ?? ''));
+        $name    = trim($_POST['name'] ?? '');
+        $phone   = preg_replace('/[^0-9+\-\s()]/', '', trim($_POST['phone'] ?? ''));
+        $dob     = $_POST['date_of_birth'] ?? '';
+        $country = $_POST['country'] ?? '';
         if ($name && strlen($phone) >= 7) {
-            $db->prepare("UPDATE users SET name = ?, phone = ? WHERE id = ?")
-               ->execute([$name, $phone, $uid]);
+            $db->prepare("UPDATE users SET name = ?, phone = ?, date_of_birth = ?, country = ? WHERE id = ?")
+               ->execute([$name, $phone, $dob ?: null, $country ?: null, $uid]);
             flash('Profile updated.');
         } else {
             flash('Name and a valid phone number are required.', 'error');
@@ -79,6 +81,21 @@ render_head('Account Settings', 'account');
     <div class="form-group">
       <label>Phone Number</label>
       <input type="tel" name="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" required>
+    </div>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input type="date" name="date_of_birth" value="<?= htmlspecialchars($user['date_of_birth'] ?? '') ?>">
+      </div>
+      <div class="form-group">
+        <label>Country</label>
+        <select name="country">
+          <option value="">-- Select --</option>
+          <?php foreach (get_countries() as $code => $name): ?>
+          <option value="<?= $code ?>" <?= ($user['country'] ?? '')===$code?'selected':'' ?>><?= htmlspecialchars($name) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
     </div>
     <div class="form-group">
       <label>Email</label>

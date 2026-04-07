@@ -2,9 +2,10 @@
 function render_head(string $title, string $active = '', bool $auth_page = false): void {
     $pages = [
         'index'    => ['Dashboard',   'index.php',    '&#128202;'],
-        'log'      => ['Log',         'log.php',      '&#127947;&#65039;'],
-        'weight'   => ['Body',      'weight.php',   '&#9878;&#65039;'],
-        'exercises'=> ['Exercises',   'exercises.php', '&#128203;'],
+        'workout'  => ['Workout',     'workout.php',  '&#128170;'],
+        'log'      => ['History',     'log.php',      '&#128203;'],
+        'weight'   => ['Body',        'weight.php',   '&#9878;&#65039;'],
+        'exercises'=> ['Exercises',   'exercises.php', '&#127947;&#65039;'],
         'plans'    => ['Plans',       'plan_manager.php', '&#128221;'],
         'schedule' => ['Schedule',    'schedule.php',  '&#128197;'],
     ];
@@ -16,6 +17,7 @@ function render_head(string $title, string $active = '', bool $auth_page = false
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f0f0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="Track every rep. Own every side. See the progress.">
 <title><?= htmlspecialchars($title) ?> — Repprogress</title>
 <?php if (!$auth_page): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -431,16 +433,17 @@ endif;
 function render_foot(bool $auth_page = false): void {
   $pages = [
       'index'    => ['Dashboard', 'index.php',    '&#128202;'],
-      'log'      => ['Log',       'log.php',      '&#127947;&#65039;'],
-      'weight'   => ['Body',    'weight.php',   '&#9878;&#65039;'],
-      'exercises'=> ['Exercises', 'exercises.php', '&#128203;'],
+      'workout'  => ['Workout',   'workout.php',  '&#128170;'],
+      'log'      => ['History',   'log.php',      '&#128203;'],
+      'weight'   => ['Body',      'weight.php',   '&#9878;&#65039;'],
+      'exercises'=> ['Exercises', 'exercises.php', '&#127947;&#65039;'],
       'plans'    => ['Plans',     'plan_manager.php', '&#128221;'],
       'schedule' => ['Schedule',  'schedule.php',  '&#128197;'],
       'account'  => ['Account',   'account.php',   '&#9881;'],
   ];
   // Detect active page from current script
   $current = basename($_SERVER['PHP_SELF'], '.php');
-  $map = ['index'=>'index','log'=>'log','weight'=>'weight','exercises'=>'exercises','plan_manager'=>'plans','plan_builder'=>'plans','schedule'=>'schedule','account'=>'account'];
+  $map = ['index'=>'index','workout'=>'workout','log'=>'log','weight'=>'weight','exercises'=>'exercises','plan_manager'=>'plans','plan_builder'=>'plans','schedule'=>'schedule','account'=>'account'];
   $active = $map[$current] ?? '';
   ?>
 </main>
@@ -484,6 +487,51 @@ function day_colors(): array {
         $colors["Day $i"] = $palette[$i - 1];
     }
     return $colors;
+}
+
+function get_countries(): array {
+    return [
+        'AF'=>'Afghanistan','AL'=>'Albania','DZ'=>'Algeria','AD'=>'Andorra','AO'=>'Angola',
+        'AG'=>'Antigua & Deps','AR'=>'Argentina','AM'=>'Armenia','AU'=>'Australia','AT'=>'Austria',
+        'AZ'=>'Azerbaijan','BS'=>'Bahamas','BH'=>'Bahrain','BD'=>'Bangladesh','BB'=>'Barbados',
+        'BY'=>'Belarus','BE'=>'Belgium','BZ'=>'Belize','BJ'=>'Benin','BT'=>'Bhutan',
+        'BO'=>'Bolivia','BA'=>'Bosnia Herzegovina','BW'=>'Botswana','BR'=>'Brazil','BN'=>'Brunei',
+        'BG'=>'Bulgaria','BF'=>'Burkina','BI'=>'Burundi','KH'=>'Cambodia','CM'=>'Cameroon',
+        'CA'=>'Canada','CV'=>'Cape Verde','CF'=>'Central African Rep','TD'=>'Chad','CL'=>'Chile',
+        'CN'=>'China','CO'=>'Colombia','KM'=>'Comoros','CG'=>'Congo','CD'=>'Congo (Democratic Rep)',
+        'CR'=>'Costa Rica','HR'=>'Croatia','CU'=>'Cuba','CY'=>'Cyprus','CZ'=>'Czech Republic',
+        'DK'=>'Denmark','DJ'=>'Djibouti','DM'=>'Dominica','DO'=>'Dominican Republic','TL'=>'East Timor',
+        'EC'=>'Ecuador','EG'=>'Egypt','SV'=>'El Salvador','GQ'=>'Equatorial Guinea','ER'=>'Eritrea',
+        'EE'=>'Estonia','ET'=>'Ethiopia','FJ'=>'Fiji','FI'=>'Finland','FR'=>'France',
+        'GA'=>'Gabon','GM'=>'Gambia','GE'=>'Georgia','DE'=>'Germany','GH'=>'Ghana',
+        'GR'=>'Greece','GD'=>'Grenada','GT'=>'Guatemala','GN'=>'Guinea','GW'=>'Guinea-Bissau',
+        'GY'=>'Guyana','HT'=>'Haiti','HN'=>'Honduras','HU'=>'Hungary','IS'=>'Iceland',
+        'IN'=>'India','ID'=>'Indonesia','IR'=>'Iran','IQ'=>'Iraq','IE'=>'Ireland (Republic)',
+        'IL'=>'Israel','IT'=>'Italy','CI'=>'Ivory Coast','JM'=>'Jamaica','JP'=>'Japan',
+        'JO'=>'Jordan','KZ'=>'Kazakhstan','KE'=>'Kenya','KI'=>'Kiribati','KP'=>'Korea North',
+        'KR'=>'Korea South','XK'=>'Kosovo','KW'=>'Kuwait','KG'=>'Kyrgyzstan','LA'=>'Laos',
+        'LV'=>'Latvia','LB'=>'Lebanon','LS'=>'Lesotho','LR'=>'Liberia','LY'=>'Libya',
+        'LI'=>'Liechtenstein','LT'=>'Lithuania','LU'=>'Luxembourg','MK'=>'Macedonia','MG'=>'Madagascar',
+        'MW'=>'Malawi','MY'=>'Malaysia','MV'=>'Maldives','ML'=>'Mali','MT'=>'Malta',
+        'MH'=>'Marshall Islands','MR'=>'Mauritania','MU'=>'Mauritius','MX'=>'Mexico','FM'=>'Micronesia',
+        'MD'=>'Moldova','MC'=>'Monaco','MN'=>'Mongolia','ME'=>'Montenegro','MA'=>'Morocco',
+        'MZ'=>'Mozambique','MM'=>'Myanmar (Burma)','NA'=>'Namibia','NR'=>'Nauru','NP'=>'Nepal',
+        'NL'=>'Netherlands','NZ'=>'New Zealand','NI'=>'Nicaragua','NE'=>'Niger','NG'=>'Nigeria',
+        'NO'=>'Norway','OM'=>'Oman','PK'=>'Pakistan','PW'=>'Palau','PA'=>'Panama',
+        'PG'=>'Papua New Guinea','PY'=>'Paraguay','PE'=>'Peru','PH'=>'Philippines','PL'=>'Poland',
+        'PT'=>'Portugal','QA'=>'Qatar','RO'=>'Romania','RU'=>'Russian Federation','RW'=>'Rwanda',
+        'KN'=>'St Kitts & Nevis','LC'=>'St Lucia','VC'=>'Saint Vincent & the Grenadines',
+        'WS'=>'Samoa','SM'=>'San Marino','ST'=>'Sao Tome & Principe','SA'=>'Saudi Arabia',
+        'SN'=>'Senegal','RS'=>'Serbia','SC'=>'Seychelles','SL'=>'Sierra Leone','SG'=>'Singapore',
+        'SK'=>'Slovakia','SI'=>'Slovenia','SB'=>'Solomon Islands','SO'=>'Somalia','ZA'=>'South Africa',
+        'SS'=>'South Sudan','ES'=>'Spain','LK'=>'Sri Lanka','SD'=>'Sudan','SR'=>'Suriname',
+        'SZ'=>'Swaziland','SE'=>'Sweden','CH'=>'Switzerland','SY'=>'Syria','TW'=>'Taiwan',
+        'TJ'=>'Tajikistan','TZ'=>'Tanzania','TH'=>'Thailand','TG'=>'Togo','TO'=>'Tonga',
+        'TT'=>'Trinidad & Tobago','TN'=>'Tunisia','TR'=>'Turkey','TM'=>'Turkmenistan','TV'=>'Tuvalu',
+        'UG'=>'Uganda','UA'=>'Ukraine','AE'=>'United Arab Emirates','GB'=>'United Kingdom',
+        'US'=>'United States','UY'=>'Uruguay','UZ'=>'Uzbekistan','VU'=>'Vanuatu','VA'=>'Vatican City',
+        'VE'=>'Venezuela','VN'=>'Vietnam','YE'=>'Yemen','ZM'=>'Zambia','ZW'=>'Zimbabwe',
+    ];
 }
 
 function active_plan(): ?array {

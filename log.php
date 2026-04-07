@@ -24,6 +24,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: log.php?session_id=$sid"); exit;
     }
     if ($action === 'log_set') {
+        // Prevent double-submit via one-time token
+        $submit_token = $_POST['submit_token'] ?? '';
+        if ($submit_token && ($submit_token === ($_SESSION['last_submit_token'] ?? ''))) {
+            // Duplicate submission — skip insert, just redirect
+            header("Location: log.php?session_id=".$_POST['session_id']); exit;
+        }
+        $_SESSION['last_submit_token'] = $submit_token;
+
         // Verify session ownership
         $own = $db->prepare("SELECT id FROM sessions WHERE id=? AND user_id=?");
         $own->execute([$_POST['session_id'], $uid]);
@@ -293,9 +301,10 @@ render_head('Log Workout','log');
   <!-- Log a set -->
   <div class="card">
     <div class="card-title">Log a Set</div>
-    <form method="post" id="set-form">
+    <form method="post" id="set-form" onsubmit="this.querySelector('[type=submit]').disabled=true">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="log_set">
+      <input type="hidden" name="submit_token" value="<?= bin2hex(random_bytes(16)) ?>">
       <input type="hidden" name="session_id" value="<?= $session_id ?>">
       <div class="form-group">
         <label>Exercise <span style="font-size:11px;font-weight:400;color:var(--muted)">(from <?= $session['plan_name'] ? htmlspecialchars($session['plan_name']) : 'active plan' ?>)</span></label>
