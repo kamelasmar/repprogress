@@ -1,6 +1,6 @@
 <?php
 /**
- * auth.php — Registration, login, email verification, and auth helpers.
+ * auth.php — Registration, login, email verification, Google OAuth, and auth helpers.
  */
 
 function register_user(PDO $db, string $email, string $phone, string $password, string $name = ''): array {
@@ -206,4 +206,106 @@ function change_password(PDO $db, int $user_id, string $current, string $new_pas
     $db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hash, $user_id]);
 
     return ['ok' => true];
+}
+
+// ── Google OAuth ─────────────────────────────────────────────────────────────
+
+function google_auth_url(): string {
+    $state = bin2hex(random_bytes(16));
+    $_SESSION['google_oauth_state'] = $state;
+    $params = http_build_query([
+        'client_id'     => GOOGLE_CLIENT_ID,
+        'redirect_uri'  => GOOGLE_REDIRECT_URI,
+        'response_type' => 'code',
+        'scope'         => 'openid email profile',
+        'access_type'   => 'online',
+        'state'         => $state,
+        'prompt'        => 'select_account',
+    ]);
+    return 'https://accounts.google.com/o/oauth2/v2/auth?' . $params;
+}
+
+function google_exchange_code(string $code): ?array {
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_POSTFIELDS     => http_build_query([
+            'code'          => $code,
+            'client_id'     => GOOGLE_CLIENT_ID,
+            'client_secret' => GOOGLE_CLIENT_SECRET,
+            'redirect_uri'  => GOOGLE_REDIRECT_URI,
+            'grant_type'    => 'authorization_code',
+        ]),
+    ]);
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($http_code !== 200 || !$response) {
+        error_log('Google OAuth token exchange failed: HTTP ' . $http_code);
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    $id_token = $data['id_token'] ?? null;
+    if (!$id_token) return null;
+
+    // Decode JWT payload (no signature verification needed — we just exchanged it directly with Google)
+    $parts = explode('.', $id_token);
+    if (count($parts) !== 3) return null;
+    $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+    if (!$payload || !isset($payload['email'])) return null;
+
+    return [
+        'email'   => strtolower($payload['email']),
+        'name'    => $payload['name'] ?? '',
+        'picture' => $payload['picture'] ?? '',
+        'sub'     => $payload['sub'] ?? '',
+        'verified'=> $payload['email_verified'] ?? false,
+    ];
+}
+
+function google_login_or_register(PDO $db, array $google_user): array {
+    $email = $google_user['email'];
+    $name  = $google_user['name'];
+
+    // Check if user exists
+    $st = $db->prepare("SELECT * FROM users WHERE email = ?");
+    $st->execute([$email]);
+    $user = $st->fetch();
+
+    if ($user) {
+        // Existing user — log them in
+        $db->prepare("UPDATE users SET last_login = NOW() WHERE id = ?")->execute([$user['id']]);
+        // Auto-verify email if Google says it's verified
+        if (!$user['email_verified'] && $google_user['verified']) {
+            $db->prepare("UPDATE users SET email_verified = 1, verification_token = NULL WHERE id = ?")->execute([$user['id']]);
+        }
+        // Update name if blank
+        if (!$user['name'] && $name) {
+            $db->prepare("UPDATE users SET name = ? WHERE id = ?")->execute([$name, $user['id']]);
+        }
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = (int)$user['id'];
+        return ['ok' => true, 'is_new' => false];
+    }
+
+    // New user — create account (no password, email pre-verified)
+    $token = bin2hex(random_bytes(32));
+    try {
+        $db->prepare("INSERT INTO users (email, phone, password_hash, email_verified, name, last_login) VALUES (?, '', ?, 1, ?, NOW())")
+           ->execute([$email, password_hash($token, PASSWORD_DEFAULT), $name ?: null]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == 23000) {
+            return ['ok' => false, 'error' => 'An account with this email already exists.'];
+        }
+        throw $e;
+    }
+
+    $user_id = (int)$db->lastInsertId();
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = $user_id;
+    return ['ok' => true, 'is_new' => true];
 }
