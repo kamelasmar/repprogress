@@ -126,6 +126,10 @@ $sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation
 
 render_head('Plan Builder — '.$plan['name'], 'plans');
 ?>
+<script>
+window._exerciseData = <?= json_encode(array_values($all_ex)) ?>;
+window._sectionOrders = <?= json_encode($section_orders) ?>;
+</script>
 
 <div class="flex items-center gap-3 mb-5 flex-wrap">
   <a href="plan_manager.php" class="text-muted text-sm">← Plans</a>
@@ -311,7 +315,31 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
 
 <!-- Right: add exercise panel -->
 <div>
-  <div class="card sticky top-4" x-data="exercisePicker()">
+  <div class="card sticky top-4" x-data="{
+    exercises: [],
+    categories: [],
+    category: '',
+    search: '',
+    selectedId: '',
+    selectedName: '',
+    section: 'Main Work',
+    sectionOrder: 6,
+    sectionOrders: {},
+    init() {
+      this.exercises = window._exerciseData || [];
+      this.categories = [...new Set(this.exercises.map(e => e.muscle_group))].sort();
+      this.sectionOrders = window._sectionOrders || {};
+    },
+    get filteredExercises() {
+      return this.exercises.filter(e => {
+        const matchCat = !this.category || e.muscle_group === this.category;
+        const matchSearch = !this.search || e.name.toLowerCase().includes(this.search.toLowerCase());
+        return matchCat && matchSearch;
+      });
+    },
+    selectExercise(ex) { this.selectedId = ex.id; this.selectedName = ex.name; },
+    clearSelection() { this.selectedId = ''; this.selectedName = ''; this.search = ''; }
+  }">
     <div class="card-title">Add Exercise</div>
     <form method="post" x-ref="addForm">
       <?= csrf_field() ?>
@@ -418,39 +446,6 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
 </div>
 
 <script>
-const exerciseData = <?= json_encode(array_values($all_ex)) ?>;
-const sectionOrderMap = <?= json_encode($section_orders) ?>;
-
-function exercisePicker() {
-  return {
-    exercises: exerciseData,
-    categories: [...new Set(exerciseData.map(e => e.muscle_group))].sort(),
-    category: '',
-    search: '',
-    selectedId: '',
-    selectedName: '',
-    section: 'Main Work',
-    sectionOrder: 6,
-    sectionOrders: sectionOrderMap,
-    get filteredExercises() {
-      return this.exercises.filter(e => {
-        const matchCat = !this.category || e.muscle_group === this.category;
-        const matchSearch = !this.search || e.name.toLowerCase().includes(this.search.toLowerCase());
-        return matchCat && matchSearch;
-      });
-    },
-    selectExercise(ex) {
-      this.selectedId = ex.id;
-      this.selectedName = ex.name;
-    },
-    clearSelection() {
-      this.selectedId = '';
-      this.selectedName = '';
-      this.search = '';
-    }
-  };
-}
-
 function toggleEdit(id) {
   var el = document.getElementById('edit-' + id);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
