@@ -431,10 +431,9 @@ window.__secOrders = <?= json_encode($section_orders) ?>;
                   <label class="text-[11px]">Muscle Group</label>
                   <select name="new_ex_muscle" required>
                     <option value="">— select —</option>
-                    <?php foreach (array_keys($ex_by_mg) as $mg): ?>
-                    <option value="<?= htmlspecialchars($mg) ?>"><?= htmlspecialchars($mg) ?></option>
+                    <?php foreach (['Chest','Back','Shoulders','Biceps','Triceps','Core','Quads','Hamstrings','Glutes','Calves','Hips','Full Body','Cardio','Mobility'] as $mg): ?>
+                    <option value="<?= $mg ?>"><?= $mg ?></option>
                     <?php endforeach; ?>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div class="form-group mb-2">
