@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                       $_POST['duration_sec'] ?: null, $_POST['side'] ?: 'both',
                       $_POST['notes'] ?: null, $_POST['difficulty'] ?: null, $uid]);
         flash('Set logged!');
-        header("Location: workout.php?day=".urlencode($active_day)."#ex-".$_POST['exercise_id']); exit;
+        header("Location: workout.php?day=".urlencode($active_day)."&logged=".$_POST['exercise_id']."#ex-".$_POST['exercise_id']); exit;
     }
 
     if ($action === 'delete_set') {
@@ -258,7 +258,16 @@ render_head('Workout', 'workout');
     }
 ?>
 <div id="ex-<?= $ex_id ?>" class="card mb-2.5" style="border-left:3px solid <?= $col ?>"
-     x-data="{ timer: 0, timerInterval: null, showTimer: false, restSec: 30, difficulty: '' }">
+     x-data="{
+       timer: 0, timerInterval: null, showTimer: false, restSec: 30, difficulty: '',
+       init() {
+         if (new URLSearchParams(window.location.search).get('logged') === '<?= $ex_id ?>') {
+           this.showTimer = true;
+           this.timer = this.restSec;
+           this.timerInterval = setInterval(() => { this.timer--; if (this.timer <= 0) { clearInterval(this.timerInterval); this.showTimer = false; } }, 1000);
+         }
+       }
+     }">
   <!-- Exercise header -->
   <div class="flex justify-between items-start gap-2 mb-2">
     <div>
@@ -338,7 +347,7 @@ render_head('Workout', 'workout');
   <?php endif; ?>
 
   <!-- Add set form -->
-  <form method="post" x-on:submit="$el.querySelector('[type=submit]').disabled=true; setTimeout(() => { showTimer=true; timer=restSec; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000) }, 100)">
+  <form method="post" x-on:submit="$el.querySelector('[type=submit]').disabled=true">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="log_set">
     <input type="hidden" name="submit_token" value="<?= bin2hex(random_bytes(16)) ?>">
