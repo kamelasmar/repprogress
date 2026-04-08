@@ -183,6 +183,19 @@ function run_migrations(PDO $db): void {
             $db->exec("ALTER TABLE exercises ADD COLUMN is_class TINYINT(1) DEFAULT 0");
     } catch (Exception $e) {}
 
+    // ── Exercise alternatives table ─────────────────────────────────
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS exercise_alternatives (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            plan_exercise_id INT NOT NULL,
+            alternative_exercise_id INT NOT NULL,
+            sort_order TINYINT DEFAULT 1,
+            FOREIGN KEY (plan_exercise_id) REFERENCES plan_exercises(id) ON DELETE CASCADE,
+            FOREIGN KEY (alternative_exercise_id) REFERENCES exercises(id),
+            UNIQUE KEY unique_alt (plan_exercise_id, alternative_exercise_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Exception $e) {}
+
     // ── Recategorize legacy muscle groups ─────────────────────────────
     try {
         $db->exec("UPDATE exercises SET muscle_group='Back' WHERE muscle_group='Lats'");

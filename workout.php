@@ -161,6 +161,17 @@ foreach ($exercises as $e) {
     }
 }
 
+// Load alternatives per plan exercise
+$workout_alts = [];
+$alt_q = $db->prepare("SELECT ea.plan_exercise_id, ea.alternative_exercise_id, e.name, e.muscle_group, e.youtube_url, e.coach_tip, e.is_class
+    FROM exercise_alternatives ea JOIN exercises e ON ea.alternative_exercise_id = e.id
+    WHERE ea.plan_exercise_id = ? ORDER BY ea.sort_order");
+foreach ($exercises as $e) {
+    $alt_q->execute([$e['id']]);
+    $alts = $alt_q->fetchAll();
+    if ($alts) $workout_alts[$e['id']] = $alts;
+}
+
 // Group by section
 $by_section = [];
 foreach ($exercises as $e) $by_section[$e['section']][] = $e;
@@ -265,13 +276,35 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
         else $default_side = 'left';
     }
 ?>
+<?php
+    $pe_alts = $workout_alts[$e['id']] ?? [];
+    // Check if user switched to an alternative via GET param
+    $active_ex_id = $ex_id;
+    $active_ex_name = $e['name'];
+    $active_ex_yt = $e['youtube_url'];
+    $active_ex_tip = $e['coach_tip'];
+    $active_is_class = $e['is_class'];
+    if (isset($_GET['alt_' . $e['id']])) {
+        $chosen_alt = (int)$_GET['alt_' . $e['id']];
+        foreach ($pe_alts as $alt) {
+            if ($alt['alternative_exercise_id'] == $chosen_alt) {
+                $active_ex_id = $alt['alternative_exercise_id'];
+                $active_ex_name = $alt['name'];
+                $active_ex_yt = $alt['youtube_url'];
+                $active_ex_tip = $alt['coach_tip'];
+                $active_is_class = $alt['is_class'];
+                break;
+            }
+        }
+    }
+?>
 <div id="ex-<?= $ex_id ?>" class="card mb-2.5" style="border-left:3px solid <?= $col ?>"
      x-data="{ difficulty: '' }">
   <!-- Exercise header -->
   <div class="flex justify-between items-start gap-2 mb-2">
     <div>
       <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
-        <span class="font-bold text-[15px] text-[var(--text)]"><?= htmlspecialchars($e['name']) ?></span>
+        <span class="font-bold text-[15px] text-[var(--text)]"><?= htmlspecialchars($active_ex_name) ?></span>
         <span class="text-xs text-muted"><?= htmlspecialchars($e['muscle_group']) ?></span>
         <?php if ($e['is_core']): ?><span class="badge badge-core">Core</span><?php endif; ?>
         <?php if ($e['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
@@ -288,14 +321,27 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
+      <?php if ($pe_alts): ?>
+      <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+        <span class="text-[10px] text-muted uppercase font-semibold">Switch:</span>
+        <?php if ($active_ex_id !== $ex_id): ?>
+        <a href="workout.php?day=<?= urlencode($active_day) ?>#ex-<?= $ex_id ?>" class="text-[11px] px-2 py-0.5 rounded bg-bg3 text-muted no-underline hover:text-[var(--text)]"><?= htmlspecialchars($e['name']) ?></a>
+        <?php endif; ?>
+        <?php foreach ($pe_alts as $alt): ?>
+        <?php if ($alt['alternative_exercise_id'] != $active_ex_id): ?>
+        <a href="workout.php?day=<?= urlencode($active_day) ?>&alt_<?= $e['id'] ?>=<?= $alt['alternative_exercise_id'] ?>#ex-<?= $ex_id ?>" class="text-[11px] px-2 py-0.5 rounded bg-bg3 text-muted no-underline hover:text-[var(--text)]"><?= htmlspecialchars($alt['name']) ?></a>
+        <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
     </div>
-    <?php if ($e['youtube_url']): ?>
-    <a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt flex-shrink-0">▶ Watch</a>
+    <?php if ($active_ex_yt): ?>
+    <a href="<?= htmlspecialchars($active_ex_yt) ?>" target="_blank" class="btn-yt flex-shrink-0">▶ Watch</a>
     <?php endif; ?>
   </div>
 
-  <?php if ($e['coach_tip']): ?>
-  <div class="coach-tip mb-2.5"><?= htmlspecialchars($e['coach_tip']) ?></div>
+  <?php if ($active_ex_tip): ?>
+  <div class="coach-tip mb-2.5"><?= htmlspecialchars($active_ex_tip) ?></div>
   <?php endif; ?>
 
   <!-- Logged sets -->
@@ -319,7 +365,7 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
         <input type="hidden" name="action" value="update_set">
         <input type="hidden" name="set_id" value="<?= $s['id'] ?>">
         <input type="hidden" name="session_id" value="<?= $session_id ?>">
-        <input type="hidden" name="exercise_id" value="<?= $ex_id ?>">
+        <input type="hidden" name="exercise_id" value="<?= $active_ex_id ?>">
         <div style="width:55px"><label class="text-[10px]">Reps</label><input type="number" name="reps" value="<?= $s['reps'] ?>" min="1" class="min-h-[36px] text-sm"></div>
         <div style="width:60px"><label class="text-[10px]">kg</label><input type="number" name="weight_kg" value="<?= $s['weight_kg'] ?>" step="0.5" min="0" class="min-h-[36px] text-sm"></div>
         <div style="width:55px"><label class="text-[10px]">Rest</label><input type="number" name="duration_sec" value="<?= $s['duration_sec'] ?>" min="0" class="min-h-[36px] text-sm"></div>
@@ -346,12 +392,12 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
     <input type="hidden" name="action" value="log_set">
     <input type="hidden" name="submit_token" value="<?= bin2hex(random_bytes(16)) ?>">
     <input type="hidden" name="session_id" value="<?= $session_id ?>">
-    <input type="hidden" name="exercise_id" value="<?= $ex_id ?>">
+    <input type="hidden" name="exercise_id" value="<?= $active_ex_id ?>">
     <input type="hidden" name="day" value="<?= htmlspecialchars($active_day) ?>">
     <input type="hidden" name="notes" value="">
     <input type="hidden" name="difficulty" x-model="difficulty">
 
-    <?php if ($e['is_class']): ?>
+    <?php if ($active_is_class): ?>
     <!-- Class: duration only -->
     <input type="hidden" name="set_number" value="1">
     <input type="hidden" name="side" value="both">

@@ -68,6 +68,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: plan_builder.php?plan_id=$plan_id&day=".$_POST['day_label']); exit;
     }
 
+    if ($action === 'add_alternative') {
+        $pe_id = (int)($_POST['pe_id'] ?? 0);
+        $alt_id = (int)($_POST['alt_exercise_id'] ?? 0);
+        if ($pe_id && $alt_id) {
+            // Check max 2 alternatives
+            $count = $db->prepare("SELECT COUNT(*) FROM exercise_alternatives WHERE plan_exercise_id=?");
+            $count->execute([$pe_id]);
+            if ($count->fetchColumn() < 2) {
+                $db->prepare("INSERT IGNORE INTO exercise_alternatives (plan_exercise_id, alternative_exercise_id, sort_order) VALUES (?,?,?)")
+                   ->execute([$pe_id, $alt_id, $count->fetchColumn() + 1]);
+                flash('Alternative added.');
+            } else {
+                flash('Maximum 2 alternatives per exercise.', 'error');
+            }
+        }
+        header("Location: plan_builder.php?plan_id=$plan_id&day=".urlencode($_POST['day_label'] ?? $active_day)); exit;
+    }
+
+    if ($action === 'remove_alternative') {
+        $alt_id = (int)($_POST['alt_id'] ?? 0);
+        $db->prepare("DELETE FROM exercise_alternatives WHERE id=? AND plan_exercise_id IN (SELECT id FROM plan_exercises WHERE plan_id=?)")
+           ->execute([$alt_id, $plan_id]);
+        flash('Alternative removed.');
+        header("Location: plan_builder.php?plan_id=$plan_id&day=".urlencode($_POST['day_label'] ?? $active_day)); exit;
+    }
+
     if ($action === 'update_day') {
         $db->prepare("UPDATE plan_days SET day_title=?,week_day=?,cardio_type=?,cardio_description=? WHERE plan_id=? AND day_label=?")
            ->execute([$_POST['day_title'],$_POST['week_day'],$_POST['cardio_type'],$_POST['cardio_description'],$plan_id,$_POST['day_label']]);
@@ -124,6 +150,15 @@ $plan_exs = $db->prepare("
 ");
 $plan_exs->execute([$plan_id, $active_day]);
 $plan_exs = $plan_exs->fetchAll();
+
+// Load alternatives for each plan exercise
+$alternatives = [];
+$alt_st = $db->prepare("SELECT ea.*, e.name, e.muscle_group, e.youtube_url FROM exercise_alternatives ea JOIN exercises e ON ea.alternative_exercise_id = e.id WHERE ea.plan_exercise_id = ? ORDER BY ea.sort_order");
+foreach ($plan_exs as $pe) {
+    $alt_st->execute([$pe['id']]);
+    $alts = $alt_st->fetchAll();
+    if ($alts) $alternatives[$pe['id']] = $alts;
+}
 
 // Group by section
 $by_section = [];
@@ -269,6 +304,39 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
           · <em><?= htmlspecialchars($e['notes']) ?></em>
           <?php endif; ?>
         </div>
+        <?php $pe_alts = $alternatives[$e['id']] ?? []; ?>
+        <?php if ($pe_alts): ?>
+        <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+          <span class="text-[10px] text-muted uppercase font-semibold">or:</span>
+          <?php foreach ($pe_alts as $alt): ?>
+          <span class="text-xs bg-bg3 px-2 py-0.5 rounded text-[var(--text)] inline-flex items-center gap-1">
+            <?= htmlspecialchars($alt['name']) ?>
+            <form method="post" class="inline"><input type="hidden" name="action" value="remove_alternative"><input type="hidden" name="alt_id" value="<?= $alt['id'] ?>"><input type="hidden" name="day_label" value="<?= $active_day ?>"><?= csrf_field() ?><button class="text-muted hover:text-red-text cursor-pointer" style="background:none;border:none;padding:0;font-size:11px">×</button></form>
+          </span>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+        <?php if (count($pe_alts) < 2): ?>
+        <div x-data="{ showAlt: false }" class="mt-1">
+          <button type="button" class="text-[10px] text-accent-text cursor-pointer" style="background:none;border:none;padding:0" x-show="!showAlt" x-on:click="showAlt = true">+ Add alternative</button>
+          <form method="post" x-show="showAlt" x-cloak class="flex gap-1.5 items-end mt-1">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="add_alternative">
+            <input type="hidden" name="pe_id" value="<?= $e['id'] ?>">
+            <input type="hidden" name="day_label" value="<?= $active_day ?>">
+            <select name="alt_exercise_id" required class="text-xs" style="padding:4px 8px;min-height:30px">
+              <option value="">— pick alternative —</option>
+              <?php foreach ($all_ex as $ae): ?>
+              <?php if ($ae['id'] != $e['exercise_id']): ?>
+              <option value="<?= $ae['id'] ?>"><?= htmlspecialchars($ae['name']) ?> (<?= $ae['muscle_group'] ?>)</option>
+              <?php endif; ?>
+              <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm" style="padding:3px 8px;font-size:11px;min-height:30px">Add</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px;min-height:30px" x-on:click="showAlt = false">×</button>
+          </form>
+        </div>
+        <?php endif; ?>
       </div>
       <div class="flex gap-1 items-center flex-wrap justify-end">
         <form method="post" class="inline"><?= csrf_field() ?><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="up"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm px-2 py-1">↑</button></form>
