@@ -122,6 +122,7 @@ $ex_by_mg = [];
 foreach ($all_ex as $e) $ex_by_mg[$e['muscle_group']][] = $e;
 
 $sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation','Main Work','Functional','Finisher','Core Block B','Cool-Down','Reset'];
+$section_orders = ['Cardio Warm-Up'=>1,'Mobility'=>2,'Stretching'=>3,'Core Block A'=>4,'Activation'=>5,'Main Work'=>6,'Functional'=>7,'Finisher'=>8,'Core Block B'=>9,'Cool-Down'=>10,'Reset'=>11];
 // Day pill numbers derived dynamically from label
 
 render_head('Plan Builder — '.$plan['name'], 'plans');
