@@ -79,28 +79,28 @@ render_head('Dashboard','index');
 
 <!-- Active plan banner -->
 <?php if ($ap): ?>
-<div class="card" style="border:1px solid var(--accent);margin-bottom:1.25rem">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+<div class="card border border-accent mb-5">
+  <div class="flex justify-between items-center flex-wrap gap-3">
     <div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-text);margin-bottom:2px">Active Plan</div>
-      <div style="font-size:16px;font-weight:700;color:var(--text)"><?= htmlspecialchars($ap['name']) ?></div>
-      <div style="font-size:13px;color:var(--muted)">Week <?= $plan_week ?> of <?= $ap['weeks_duration'] ?> &middot; <?= max(0,$ap['weeks_duration']-$plan_week) ?> weeks remaining</div>
+      <div class="text-[11px] font-bold uppercase tracking-wide text-accent-text mb-0.5">Active Plan</div>
+      <div class="text-base font-bold"><?= htmlspecialchars($ap['name']) ?></div>
+      <div class="text-[13px] text-muted">Week <?= $plan_week ?> of <?= $ap['weeks_duration'] ?> &middot; <?= max(0,$ap['weeks_duration']-$plan_week) ?> weeks remaining</div>
     </div>
-    <div style="flex:1;max-width:240px">
-      <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
-        <div style="height:100%;width:<?= $plan_pct ?>%;background:var(--accent);border-radius:4px"></div>
+    <div class="flex-1 max-w-60">
+      <div class="h-2 bg-bg3 rounded overflow-hidden">
+        <div class="h-full bg-accent rounded" style="width:<?= $plan_pct ?>%"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px"><?= $plan_pct ?>% complete</div>
+      <div class="text-[11px] text-muted mt-1"><?= $plan_pct ?>% complete</div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div class="flex gap-2">
       <a href="plan_manager.php" class="btn btn-ghost btn-sm">Change Plan</a>
       <a href="log.php?new=1" class="btn btn-primary btn-sm">+ Log Session</a>
     </div>
   </div>
 </div>
 <?php else: ?>
-<div class="card" style="border:1px solid var(--warn);margin-bottom:1.25rem">
-  <strong style="color:var(--warn-text)">No active plan.</strong> <a href="plan_manager.php">Activate a plan</a> to start logging sessions.
+<div class="card border border-warn mb-5">
+  <strong class="text-warn-text">No active plan.</strong> <a href="plan_manager.php">Activate a plan</a> to start logging sessions.
 </div>
 <?php endif; ?>
 
@@ -150,14 +150,14 @@ render_head('Dashboard','index');
       <tbody>
       <?php foreach($recent as $r): $col=$day_colors[$r['day_label']]??'#888'; ?>
       <tr>
-        <td style="font-size:13px"><a href="log.php?session_id=<?= $r['id'] ?>"><?= date('M j',strtotime($r['session_date'])) ?></a></td>
+        <td class="text-[13px]"><a href="log.php?session_id=<?= $r['id'] ?>"><?= date('M j',strtotime($r['session_date'])) ?></a></td>
         <td>
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="width:7px;height:7px;border-radius:50%;background:<?= $col ?>;flex-shrink:0"></span>
-            <span style="font-size:13px"><?= htmlspecialchars($r['title']) ?></span>
+          <div class="flex items-center gap-1.5">
+            <span class="size-[7px] rounded-full shrink-0" style="background:<?= $col ?>"></span>
+            <span class="text-[13px]"><?= htmlspecialchars($r['title']) ?></span>
           </div>
         </td>
-        <td style="font-size:11px;color:var(--muted)"><?= $r['plan_name']?htmlspecialchars($r['plan_name']):'—' ?></td>
+        <td class="text-[11px] text-muted"><?= $r['plan_name']?htmlspecialchars($r['plan_name']):'—' ?></td>
         <td><?= $r['set_count'] ?></td>
       </tr>
       <?php endforeach; ?>
@@ -169,7 +169,7 @@ render_head('Dashboard','index');
   </div>
 </div>
 
-<div style="display:flex;gap:10px;flex-wrap:wrap">
+<div class="flex gap-2.5 flex-wrap">
   <a href="log.php?new=1" class="btn btn-primary">+ Log Workout</a>
   <a href="weight.php" class="btn btn-ghost">+ Log Body Comp</a>
   <a href="plan_manager.php" class="btn btn-ghost">Plans</a>

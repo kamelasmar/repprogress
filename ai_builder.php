@@ -266,7 +266,7 @@ render_head('AI Workout Builder', 'plans');
   <div class="page-sub">Answer a few questions and AI will generate a starting plan for you to customise</div>
 </div>
 
-<div class="card" style="max-width:640px">
+<div class="card max-w-[640px]">
   <form method="post" id="ai-form">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="generate">
@@ -324,15 +324,15 @@ render_head('AI Workout Builder', 'plans');
 
     <div class="form-group">
       <label>Focus Areas</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+      <div class="flex flex-wrap gap-2 mt-1">
         <?php
         $focus_opts = ['Upper Body','Lower Body','Core','Full Body','Mobility'];
         $selected_focus = $form['focus_areas'] ?? [];
         foreach ($focus_opts as $fo):
         ?>
-        <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:400;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
+        <label class="inline-flex items-center gap-1.5 text-sm font-normal cursor-pointer py-1.5 px-3 bg-bg3 border border-border-app2 rounded-lg">
           <input type="checkbox" name="focus_areas[]" value="<?= $fo ?>" <?= in_array($fo, $selected_focus) ? 'checked' : '' ?>
-            style="width:auto;accent-color:var(--accent);-webkit-appearance:checkbox;appearance:checkbox">
+            class="w-auto accent-accent appearance-checkbox">
           <?= $fo ?>
         </label>
         <?php endforeach; ?>
@@ -340,11 +340,11 @@ render_head('AI Workout Builder', 'plans');
     </div>
 
     <div class="form-group">
-      <label>Additional Details <span style="font-weight:400;color:var(--muted2)">(optional)</span></label>
+      <label>Additional Details <span class="font-normal text-muted2">(optional)</span></label>
       <textarea name="details" rows="3" maxlength="500" placeholder="e.g. Bad left knee, prefer dumbbells over barbells, want extra hip mobility work..."><?= htmlspecialchars($form['details'] ?? '') ?></textarea>
     </div>
 
-    <div style="display:flex;gap:10px;align-items:center">
+    <div class="flex gap-2.5 items-center">
       <button type="submit" class="btn btn-primary" id="ai-submit-btn">Generate Plan</button>
       <a href="plan_manager.php" class="btn btn-ghost btn-sm">Cancel</a>
     </div>
@@ -373,33 +373,33 @@ document.getElementById('ai-form').addEventListener('submit', function() {
 </div>
 
 <?php foreach ($pdays as $d_idx => $day): ?>
-<div class="card" style="margin-bottom:1rem">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer" onclick="this.parentElement.querySelector('.day-content').classList.toggle('collapsed')">
+<div class="card mb-4" x-data="{ open: true }">
+  <div class="flex items-center gap-2.5 mb-3 cursor-pointer" x-on:click="open = !open">
     <?= day_pill($day['day_label']) ?>
-    <span style="font-size:16px;font-weight:700;color:var(--text)"><?= htmlspecialchars($day['day_title']) ?></span>
+    <span class="text-base font-bold"><?= htmlspecialchars($day['day_title']) ?></span>
   </div>
-  <div class="day-content">
+  <div x-show="open" x-cloak>
     <?php foreach ($day['sections'] as $sec): ?>
     <div class="section-hdr"><?= htmlspecialchars($sec['name']) ?></div>
     <table>
       <thead>
         <tr>
           <th>Exercise</th>
-          <th style="width:70px">Sets</th>
-          <th style="width:90px">Reps</th>
-          <th style="width:60px">Video</th>
+          <th class="w-[70px]">Sets</th>
+          <th class="w-[90px]">Reps</th>
+          <th class="w-[60px]">Video</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($sec['exercises'] as $ex): ?>
         <tr>
           <td>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span style="font-weight:600"><?= htmlspecialchars($ex['name']) ?></span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold"><?= htmlspecialchars($ex['name']) ?></span>
               <?php if ($ex['is_new']): ?>
-              <span class="badge" style="background:var(--warn-dim);color:var(--warn-text)">New</span>
+              <span class="badge bg-warn-dim text-warn-text">New</span>
               <?php else: ?>
-              <span class="badge" style="background:var(--green-dim);color:var(--green-text)">Library</span>
+              <span class="badge bg-green-dim text-green-text">Library</span>
               <?php endif; ?>
             </div>
             <?php if ($ex['coach_tip']): ?>
@@ -418,8 +418,8 @@ document.getElementById('ai-form').addEventListener('submit', function() {
 </div>
 <?php endforeach; ?>
 
-<div style="display:flex;gap:10px;align-items:center;margin-top:1.5rem">
-  <form method="post" style="display:inline">
+<div class="flex gap-2.5 items-center mt-6">
+  <form method="post" class="inline">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="accept">
     <button type="submit" class="btn btn-primary">Accept &amp; Open Builder</button>
@@ -427,10 +427,6 @@ document.getElementById('ai-form').addEventListener('submit', function() {
   <a href="ai_builder.php" class="btn btn-ghost btn-sm">Regenerate</a>
   <a href="plan_manager.php" class="btn btn-ghost btn-sm">Cancel</a>
 </div>
-
-<style>
-.day-content.collapsed { display: none; }
-</style>
 
 <?php endif; ?>
 <?php render_foot(); ?>

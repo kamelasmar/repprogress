@@ -74,7 +74,7 @@ render_head('Body Composition', 'weight');
   <div class="page-sub">Track weight, body fat, and muscle mass over time</div>
 </div>
 
-<div class="grid-4" style="margin-bottom:1.25rem">
+<div class="grid-4 mb-5">
   <div class="metric">
     <div class="metric-label">Current Weight</div>
     <div class="metric-value"><?= $latest ? number_format($latest['weight_kg'],1).' kg' : '—' ?></div>
@@ -108,7 +108,7 @@ render_head('Body Composition', 'weight');
 </div>
 
 <!-- Charts -->
-<div class="grid-2" style="margin-bottom:1.25rem">
+<div class="grid-2 mb-5">
   <div class="card">
     <div class="card-title">Weight Trend</div>
     <?php if (count($all) >= 2): ?>
@@ -139,7 +139,7 @@ render_head('Body Composition', 'weight');
         <input type="date" name="logged_date" value="<?= date('Y-m-d') ?>" required>
       </div>
       <div class="form-group">
-        <label>Weight (kg) <span style="color:var(--red)">*</span></label>
+        <label>Weight (kg) <span class="text-red">*</span></label>
         <input type="number" name="weight_kg" step="0.1" min="30" max="300" placeholder="80.5" required>
       </div>
       <div class="form-row form-row-2">
@@ -164,19 +164,19 @@ render_head('Body Composition', 'weight');
   <div class="card">
     <div class="card-title">History</div>
     <?php if ($all): ?>
-    <div style="overflow-x:auto">
+    <div class="overflow-x-auto">
     <table>
       <thead><tr><th>Date</th><th>Weight</th><th>Fat %</th><th>Muscle %</th><th>Notes</th><th></th></tr></thead>
       <tbody>
       <?php foreach (array_reverse($all) as $r): ?>
       <tr>
-        <td style="white-space:nowrap"><?= date('M j, Y', strtotime($r['logged_date'])) ?></td>
+        <td class="whitespace-nowrap"><?= date('M j, Y', strtotime($r['logged_date'])) ?></td>
         <td><strong><?= number_format($r['weight_kg'],1) ?> kg</strong></td>
         <td><?= $r['body_fat_pct'] ? number_format($r['body_fat_pct'],1).'%' : '—' ?></td>
         <td><?= $r['muscle_mass_pct'] ? number_format($r['muscle_mass_pct'],1).'%' : '—' ?></td>
-        <td style="color:var(--muted);font-size:13px"><?= htmlspecialchars($r['notes'] ?? '') ?></td>
+        <td class="text-muted text-[13px]"><?= htmlspecialchars($r['notes'] ?? '') ?></td>
         <td>
-          <form method="post" style="display:inline">
+          <form method="post" class="inline" x-data x-on:submit="if(!confirm('Delete this entry?')) $event.preventDefault()">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete_weight">
             <input type="hidden" name="id" value="<?= $r['id'] ?>">

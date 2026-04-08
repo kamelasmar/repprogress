@@ -42,12 +42,12 @@ foreach ($sets as $s) {
 render_head($ex['name'], 'exercises');
 ?>
 
-<div style="margin-bottom:1rem"><a href="exercises.php" style="color:var(--muted);font-size:14px">← Back to library</a></div>
+<div class="mb-4"><a href="exercises.php" class="text-muted text-sm">← Back to library</a></div>
 
 <div class="page-header">
   <div class="page-title"><?= htmlspecialchars($ex['name']) ?></div>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px">
-    <span style="font-size:14px;color:var(--muted)"><?= $ex['muscle_group'] ?></span>
+  <div class="flex items-center gap-2.5 flex-wrap mt-1.5">
+    <span class="text-sm text-muted"><?= $ex['muscle_group'] ?></span>
     <?php if ($ex['is_core']): ?><span class="badge badge-core">Core</span><?php endif; ?>
     <?php if ($ex['is_mobility']): ?><span class="badge badge-mob">Mobility</span><?php endif; ?>
     <?php if ($ex['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
@@ -57,15 +57,15 @@ render_head($ex['name'], 'exercises');
 </div>
 
 <?php if ($ex['coach_tip']): ?>
-<div style="padding:14px 18px;background:var(--accent-light);border-radius:10px;font-size:14px;color:#085041;line-height:1.6;margin-bottom:1.25rem;border:1px solid #9FE1CB">
+<div class="py-3.5 px-4.5 bg-accent-dim rounded-[10px] text-sm text-accent-text leading-relaxed mb-5 border border-accent">
   <strong>Coach note:</strong> <?= htmlspecialchars($ex['coach_tip']) ?>
 </div>
 <?php endif; ?>
 
 <!-- Plan filter -->
 <?php if (count($all_plans) > 1): ?>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center">
-  <span style="font-size:13px;color:var(--muted)">View by plan:</span>
+<div class="flex gap-2 flex-wrap mb-5 items-center">
+  <span class="text-[13px] text-muted">View by plan:</span>
   <a href="exercise_detail.php?id=<?= $id ?>" class="btn btn-sm <?= !$filter_plan?'btn-primary':'btn-ghost' ?>">All Plans</a>
   <?php foreach ($all_plans as $p): ?>
   <a href="exercise_detail.php?id=<?= $id ?>&plan_id=<?= $p['id'] ?>" class="btn btn-sm <?= $filter_plan==$p['id']?'btn-primary':'btn-ghost' ?>">
@@ -75,7 +75,7 @@ render_head($ex['name'], 'exercises');
 </div>
 <?php endif; ?>
 
-<div class="grid-3" style="margin-bottom:1.25rem">
+<div class="grid-3 mb-5">
   <div class="metric"><div class="metric-label">Total Sets</div><div class="metric-value"><?= count($sets) ?></div>
     <div class="metric-sub"><?= $filter_plan ? 'this plan' : 'all plans' ?></div>
   </div>
@@ -86,12 +86,12 @@ render_head($ex['name'], 'exercises');
     <?php endif; ?>
   </div>
   <div class="metric"><div class="metric-label">Last Done</div>
-    <div class="metric-value" style="font-size:18px"><?= $sets?date('M j',strtotime(end($sets)['session_date'])):'—' ?></div>
+    <div class="metric-value text-lg"><?= $sets?date('M j',strtotime(end($sets)['session_date'])):'—' ?></div>
   </div>
 </div>
 
 <?php if (count($prog) >= 2): ?>
-<div class="card" style="margin-bottom:1.25rem">
+<div class="card mb-5">
   <div class="card-title">Weight Progression<?= (count($left_prog)>=1||count($right_prog)>=1)?' — Left vs Right comparison':'' ?></div>
   <canvas id="progChart" height="160"></canvas>
 </div>
@@ -105,11 +105,11 @@ render_head($ex['name'], 'exercises');
     <tbody>
     <?php foreach (array_reverse($sets) as $s): ?>
     <tr>
-      <td style="font-size:13px;white-space:nowrap"><?= date('M j, Y',strtotime($s['session_date'])) ?></td>
-      <td style="font-size:13px"><a href="log.php?session_id=<?= $s['session_id'] ?>"><?= htmlspecialchars($s['session_title']) ?></a></td>
-      <td style="font-size:11px;color:var(--muted)"><?= $s['plan_name']?htmlspecialchars($s['plan_name']):'—' ?></td>
+      <td class="text-[13px] whitespace-nowrap"><?= date('M j, Y',strtotime($s['session_date'])) ?></td>
+      <td class="text-[13px]"><a href="log.php?session_id=<?= $s['session_id'] ?>"><?= htmlspecialchars($s['session_title']) ?></a></td>
+      <td class="text-[11px] text-muted"><?= $s['plan_name']?htmlspecialchars($s['plan_name']):'—' ?></td>
       <td><?= $s['set_number'] ?></td>
-      <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--bg);color:var(--muted)"><?= $s['side'] ?></span></td>
+      <td><span class="text-[11px] px-1.5 py-0.5 rounded bg-bg text-muted"><?= $s['side'] ?></span></td>
       <td><?= $s['reps']?:'—' ?></td>
       <td><strong><?= $s['weight_kg']?number_format($s['weight_kg'],1).' kg':'—' ?></strong></td>
       <td><?= $s['duration_sec']?$s['duration_sec'].'s':'—' ?></td>

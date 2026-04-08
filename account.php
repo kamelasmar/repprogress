@@ -142,12 +142,12 @@ render_head('Account Settings', 'account');
     <div class="form-group">
       <label>Email</label>
       <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled
-             style="opacity:0.6;cursor:not-allowed">
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">Use the section below to change your email</div>
+             class="opacity-60 cursor-not-allowed">
+      <div class="text-xs text-muted mt-1">Use the section below to change your email</div>
     </div>
     <div class="form-group">
       <label>Member Since</label>
-      <div style="font-size:14px;color:var(--muted)"><?= date('F j, Y', strtotime($user['created_at'])) ?></div>
+      <div class="text-sm text-muted"><?= date('F j, Y', strtotime($user['created_at'])) ?></div>
     </div>
     <button type="submit" class="btn btn-primary btn-sm">Save Profile</button>
   </form>
@@ -155,10 +155,10 @@ render_head('Account Settings', 'account');
 
 <div>
 <!-- Change Email -->
-<div class="card" style="margin-bottom:1.25rem">
+<div class="card mb-5">
   <div class="card-title">Change Email</div>
   <?php if ($user['pending_email']): ?>
-  <div class="info-box" style="margin-bottom:1rem">
+  <div class="info-box mb-4">
     Verification email sent to <strong><?= htmlspecialchars($user['pending_email']) ?></strong>. Check your inbox and click the link to confirm.
   </div>
   <?php endif; ?>
@@ -167,7 +167,7 @@ render_head('Account Settings', 'account');
     <input type="hidden" name="action" value="change_email">
     <div class="form-group">
       <label>Current Email</label>
-      <div style="font-size:14px;color:var(--text);margin-bottom:8px"><?= htmlspecialchars($user['email']) ?></div>
+      <div class="text-sm mb-2"><?= htmlspecialchars($user['email']) ?></div>
     </div>
     <div class="form-group">
       <label>New Email Address</label>
@@ -202,14 +202,14 @@ render_head('Account Settings', 'account');
 </div>
 
 <!-- Shared Access -->
-<div style="margin-top:1.5rem">
-  <div class="page-title" style="font-size:18px;margin-bottom:1rem">Shared Access</div>
+<div class="mt-6">
+  <div class="page-title text-lg mb-4">Shared Access</div>
 
   <div class="grid-2">
     <!-- Share your account -->
     <div class="card">
       <div class="card-title">Share Your Account</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">
+      <p class="text-[13px] text-muted mb-4 leading-normal">
         Grant someone full access to your plans, sessions, and body comp data. They can view and log on your behalf.
       </p>
       <form method="post">
@@ -223,15 +223,15 @@ render_head('Account Settings', 'account');
       </form>
 
       <?php if ($shared_with): ?>
-      <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">People with access</div>
+      <div class="mt-5 border-t border-border-app pt-4">
+        <div class="text-xs font-bold uppercase tracking-wide text-muted mb-2">People with access</div>
         <?php foreach ($shared_with as $sw): ?>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div class="flex justify-between items-center py-2 border-b border-border-app">
           <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)"><?= htmlspecialchars($sw['name'] ?: $sw['email']) ?></div>
-            <?php if ($sw['name']): ?><div style="font-size:11px;color:var(--muted)"><?= htmlspecialchars($sw['email']) ?></div><?php endif; ?>
+            <div class="text-[13px] font-semibold"><?= htmlspecialchars($sw['name'] ?: $sw['email']) ?></div>
+            <?php if ($sw['name']): ?><div class="text-[11px] text-muted"><?= htmlspecialchars($sw['email']) ?></div><?php endif; ?>
           </div>
-          <form method="post" style="display:inline" onsubmit="return confirm('Revoke access for this user?')">
+          <form method="post" class="inline" x-data x-on:submit="if(!confirm('Revoke access for this user?')) $event.preventDefault()">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="revoke_access">
             <input type="hidden" name="share_id" value="<?= $sw['id'] ?>">
@@ -247,14 +247,14 @@ render_head('Account Settings', 'account');
     <div class="card">
       <div class="card-title">Accounts Shared With You</div>
       <?php if ($shared_to_me): ?>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">
+      <p class="text-[13px] text-muted mb-4 leading-normal">
         Use the profile switcher in the sidebar to view and manage these accounts.
       </p>
       <?php foreach ($shared_to_me as $sm): ?>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div class="flex justify-between items-center py-2.5 border-b border-border-app">
         <div>
-          <div style="font-size:14px;font-weight:600;color:var(--text)"><?= htmlspecialchars($sm['name'] ?: $sm['email']) ?></div>
-          <?php if ($sm['name']): ?><div style="font-size:12px;color:var(--muted)"><?= htmlspecialchars($sm['email']) ?></div><?php endif; ?>
+          <div class="text-sm font-semibold"><?= htmlspecialchars($sm['name'] ?: $sm['email']) ?></div>
+          <?php if ($sm['name']): ?><div class="text-xs text-muted"><?= htmlspecialchars($sm['email']) ?></div><?php endif; ?>
         </div>
         <a href="switch_profile.php?to=<?= $sm['user_id'] ?>" class="btn btn-primary btn-sm">View</a>
       </div>
