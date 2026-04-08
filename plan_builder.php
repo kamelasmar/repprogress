@@ -88,6 +88,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header("Location: plan_builder.php?plan_id=$plan_id&day=".$_POST['day_label']); exit;
     }
+
+    if ($action === 'quick_add_exercise') {
+        $name   = trim($_POST['new_ex_name'] ?? '');
+        $muscle = trim($_POST['new_ex_muscle'] ?? '');
+        $yt_url = trim($_POST['new_ex_youtube'] ?? '');
+        if ($name && $muscle) {
+            $yt = $yt_url ?: 'https://www.youtube.com/results?search_query=' . urlencode($name . ' tutorial form');
+            $st = $db->prepare("INSERT INTO exercises (name, muscle_group, youtube_url, created_by, status, is_suggested) VALUES (?,?,?,?,?,?)");
+            $st->execute([$name, $muscle, $yt, $uid, is_admin() ? 'approved' : 'pending', is_admin() ? 0 : 1]);
+            flash("\"$name\" added! It's now available in the picker.");
+        } else {
+            flash('Name and muscle group are required.', 'error');
+        }
+        header("Location: plan_builder.php?plan_id=$plan_id&day=".urlencode($_POST['day_label'] ?? $active_day)); exit;
+    }
 }
 
 // ── Load data ────────────────────────────────────────────────────────────────
@@ -399,8 +414,39 @@ window.__secOrders = <?= json_encode($section_orders) ?>;
             </template>
             <div x-show="filtered.length === 0" class="px-3 py-4 text-center text-xs text-muted">No exercises found</div>
           </div>
-          <div class="mt-2 text-center">
-            <a href="exercises.php" target="_blank" class="text-xs text-accent-text hover:underline">Can't find it? Add a new exercise →</a>
+          <!-- Quick add new exercise -->
+          <div x-data="{ showNew: false }" class="mt-3">
+            <button type="button" class="text-xs text-accent-text hover:underline cursor-pointer" style="background:none;border:none;padding:0" x-show="!showNew" x-on:click="showNew = true">Can't find it? Add a new exercise +</button>
+            <div x-show="showNew" x-transition x-cloak class="bg-bg3 rounded-app p-3 border border-border-app">
+              <div class="text-xs font-bold text-[var(--text)] mb-2">Quick Add Exercise</div>
+              <form method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="quick_add_exercise">
+                <input type="hidden" name="day_label" value="<?= $active_day ?>">
+                <div class="form-group mb-2">
+                  <label class="text-[11px]">Exercise Name</label>
+                  <input type="text" name="new_ex_name" placeholder="e.g. Incline Dumbbell Press" required>
+                </div>
+                <div class="form-group mb-2">
+                  <label class="text-[11px]">Muscle Group</label>
+                  <select name="new_ex_muscle" required>
+                    <option value="">— select —</option>
+                    <?php foreach (array_keys($ex_by_mg) as $mg): ?>
+                    <option value="<?= htmlspecialchars($mg) ?>"><?= htmlspecialchars($mg) ?></option>
+                    <?php endforeach; ?>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="form-group mb-2">
+                  <label class="text-[11px]">YouTube Link <span class="font-normal text-muted2">(optional)</span></label>
+                  <input type="url" name="new_ex_youtube" placeholder="https://youtube.com/...">
+                </div>
+                <div class="flex gap-2">
+                  <button type="submit" class="btn btn-primary btn-sm">Add Exercise</button>
+                  <button type="button" class="btn btn-ghost btn-sm" x-on:click="showNew = false">Cancel</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
