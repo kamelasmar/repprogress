@@ -60,4 +60,6 @@
   --color-green-text:  var(--green-text);
   --color-border-app:  var(--border);
   --color-border-app2: var(--border2);
+  --radius-app:        var(--radius);
+  --radius-app-lg:     var(--radius-lg);
 }
