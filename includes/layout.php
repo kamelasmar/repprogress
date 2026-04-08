@@ -166,7 +166,7 @@ function render_foot(bool $auth_page = false): void {
   <!-- More slide-up menu -->
   <div x-show="moreOpen" x-transition.opacity x-on:click="moreOpen = false" class="fixed inset-0 bg-[rgba(0,0,0,0.5)] z-[99]" x-cloak></div>
   <div x-show="moreOpen" x-transition x-cloak class="fixed bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom))] left-0 right-0 bg-surface border-t border-border-app rounded-t-xl z-[101] px-4 py-4">
-    <div class="grid grid-cols-4 gap-2 text-center">
+    <div class="grid grid-cols-4 gap-2 text-center mb-3">
       <?php foreach ($more_nav as $key => [$label, $href, $icon]): ?>
       <a href="<?= $href ?>" class="flex flex-col items-center gap-1 py-2 rounded-app no-underline <?= $active===$key ? 'bg-accent-dim text-accent-text' : 'text-muted hover:text-[var(--text)]' ?>">
         <span class="text-xl"><?= $icon ?></span>
@@ -174,6 +174,7 @@ function render_foot(bool $auth_page = false): void {
       </a>
       <?php endforeach; ?>
     </div>
+    <a href="logout.php" class="block text-center text-xs text-red-text py-2 border-t border-border-app no-underline">Log Out</a>
   </div>
   <div class="bottom-nav-inner">
     <?php foreach ($main_nav as $key => [$label, $href, $icon]): ?>
