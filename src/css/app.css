@@ -1,6 +1,9 @@
 @import "tailwindcss/utilities";
 @import "tailwindcss/theme";
 
+/* Hide Alpine.js elements until initialized */
+[x-cloak] { display: none !important; }
+
 /* ── Theme variables — matches existing layout.php dark theme ── */
 :root {
   --bg:           #0f0f0f;

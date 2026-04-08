@@ -112,7 +112,7 @@ render_head('Plans', 'plans');
     ? min(100, round(((time()-strtotime($p['start_date']))/604800) / $p['weeks_duration'] * 100))
     : 0;
 ?>
-<div class="card mb-3 <?= $p['is_active'] ? 'border-2 border-accent' : '' ?>">
+<div class="card mb-3" <?= $p['is_active'] ? 'style="border:2px solid var(--accent)"' : '' ?>>
   <div class="flex justify-between items-start flex-wrap gap-3">
     <div class="flex-1">
       <div class="flex items-center gap-2.5 flex-wrap mb-1">
@@ -182,22 +182,22 @@ render_head('Plans', 'plans');
     <?php if (openai_api_key_configured()): ?>
     <div x-show="mode === 'choose'">
       <p class="text-[13px] text-muted mb-4 leading-relaxed">Choose how to start your new plan:</p>
-      <div class="grid grid-cols-2 gap-2.5 mb-5">
-        <button type="button" class="btn btn-ghost flex flex-col items-center justify-center p-3.5 h-auto whitespace-normal text-center" x-on:click="mode = 'form'">
-          <span class="text-xl block mb-1">&#128221;</span>
-          <span class="font-bold block">Blank Plan</span>
-          <span class="text-xs text-muted block mt-0.5">Start from scratch</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
+        <button type="button" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal" x-on:click="mode = 'form'">
+          <span style="font-size:20px;display:block;margin-bottom:4px">&#128221;</span>
+          <span style="font-weight:700;display:block">Blank Plan</span>
+          <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Start from scratch</span>
         </button>
-        <a href="ai_builder.php" class="btn btn-ghost flex flex-col items-center justify-center p-3.5 h-auto whitespace-normal text-center no-underline">
-          <span class="text-xl block mb-1">&#129302;</span>
-          <span class="font-bold block">AI Generated</span>
-          <span class="text-xs text-muted block mt-0.5">Answer questions, get a plan</span>
+        <a href="ai_builder.php" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal;text-decoration:none">
+          <span style="font-size:20px;display:block;margin-bottom:4px">&#129302;</span>
+          <span style="font-weight:700;display:block">AI Generated</span>
+          <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Answer questions, get a plan</span>
         </a>
       </div>
     </div>
     <?php endif; ?>
 
-    <div x-show="mode === 'form'" x-transition>
+    <div x-show="mode === 'form'" x-transition x-cloak>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="create">
