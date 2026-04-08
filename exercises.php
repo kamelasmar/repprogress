@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_e
     $func    = isset($_POST['is_functional'])    ? 1 : 0;
     $both    = isset($_POST['both_sides'])       ? 1 : 0;
     $cardio  = $_POST['cardio_type'] ?? 'none';
+    $is_class = isset($_POST['is_class']) ? 1 : 0;
 
     if ($name && $muscle) {
         // Admin exercises are approved immediately; user suggestions are pending
@@ -28,10 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_e
 
         $st = $db->prepare("INSERT INTO exercises
             (name, muscle_group, is_left_priority, is_mobility, is_core, is_functional,
-             cardio_type, both_sides, youtube_url, coach_tip, created_by, status, is_suggested)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+             cardio_type, both_sides, youtube_url, coach_tip, created_by, status, is_suggested, is_class)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         $st->execute([$name, $muscle, $left, $mob, $core, $func,
-                      $cardio, $both, $yt, $tip, $uid, $status, $is_suggested]);
+                      $cardio, $both, $yt, $tip, $uid, $status, $is_suggested, $is_class]);
 
         if ($adm) {
             flash("Exercise \"$name\" added to library.");
@@ -283,6 +284,7 @@ render_head('Exercise Library — Browse & Add Exercises','exercises', false, 'B
         ['is_mobility','Mobility'],
         ['is_core','Core'],
         ['is_functional','Functional'],
+        ['is_class','Class (duration only)'],
       ] as [$field,$label]): ?>
       <label class="flex items-center gap-2 text-sm font-normal text-[var(--text)] cursor-pointer" style="text-transform:none;letter-spacing:0;margin:0">
         <input type="checkbox" name="<?= $field ?>" value="1" style="width:auto;-webkit-appearance:checkbox;appearance:checkbox"> <?= $label ?>
@@ -347,6 +349,7 @@ render_head('Exercise Library — Browse & Add Exercises','exercises', false, 'B
           <?php if ($e['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
           <?php if ($e['cardio_type']==='hiit'): ?><span class="badge badge-hiit">HIIT</span><?php endif; ?>
           <?php if ($e['cardio_type']==='steady_state'): ?><span class="badge badge-ss">Steady State</span><?php endif; ?>
+          <?php if (!empty($e['is_class'])): ?><span class="badge badge-mob">Class</span><?php endif; ?>
         </div>
         <?php if ($e['coach_tip']): ?>
         <div class="coach-tip mb-1"><?= htmlspecialchars($e['coach_tip']) ?></div>

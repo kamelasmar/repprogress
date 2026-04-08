@@ -97,10 +97,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name   = trim($_POST['new_ex_name'] ?? '');
         $muscle = trim($_POST['new_ex_muscle'] ?? '');
         $yt_url = trim($_POST['new_ex_youtube'] ?? '');
+        $is_class = isset($_POST['is_class']) ? 1 : 0;
         if ($name && $muscle) {
             $yt = $yt_url ?: 'https://www.youtube.com/results?search_query=' . urlencode($name . ' tutorial form');
-            $st = $db->prepare("INSERT INTO exercises (name, muscle_group, youtube_url, created_by, status, is_suggested) VALUES (?,?,?,?,?,?)");
-            $st->execute([$name, $muscle, $yt, $uid, is_admin() ? 'approved' : 'pending', is_admin() ? 0 : 1]);
+            $st = $db->prepare("INSERT INTO exercises (name, muscle_group, youtube_url, created_by, status, is_suggested, is_class) VALUES (?,?,?,?,?,?,?)");
+            $st->execute([$name, $muscle, $yt, $uid, is_admin() ? 'approved' : 'pending', is_admin() ? 0 : 1, $is_class]);
             flash("\"$name\" added! It's now available in the picker.");
         } else {
             flash('Name and muscle group are required.', 'error');
@@ -134,7 +135,7 @@ $day_config->execute([$plan_id, $active_day]);
 $day_config = $day_config->fetch();
 
 // All exercises for the add form (approved + user's own pending)
-$all_ex_st = $db->prepare("SELECT id, name, muscle_group, is_mobility, is_core, is_functional, cardio_type, youtube_url FROM exercises WHERE status='approved' OR created_by=? ORDER BY muscle_group, name");
+$all_ex_st = $db->prepare("SELECT id, name, muscle_group, is_mobility, is_core, is_functional, cardio_type, youtube_url, is_class FROM exercises WHERE status='approved' OR created_by=? ORDER BY muscle_group, name");
 $all_ex_st->execute([$uid]);
 $all_ex = $all_ex_st->fetchAll();
 $ex_by_mg = [];
@@ -340,6 +341,7 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
     search: '',
     selectedId: '',
     selectedName: '',
+    selectedIsClass: false,
     section: 'Main Work',
     sectionOrder: 6,
     sectionOrders: window.__secOrders || {},
@@ -357,8 +359,8 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
         return matchCat && matchSearch;
       });
     },
-    selectExercise(ex) { this.selectedId = String(ex.id); this.selectedName = ex.name; },
-    clearSelection() { this.selectedId = ''; this.selectedName = ''; this.search = ''; this.category = ''; this.doFilter(); }
+    selectExercise(ex) { this.selectedId = String(ex.id); this.selectedName = ex.name; this.selectedIsClass = !!parseInt(ex.is_class); },
+    clearSelection() { this.selectedId = ''; this.selectedName = ''; this.selectedIsClass = false; this.search = ''; this.category = ''; this.doFilter(); }
   }">
     <div class="card-title">Add Exercise</div>
     <form method="post" x-ref="addForm">
@@ -403,11 +405,12 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
                       <span class="text-sm font-semibold" x-text="ex.name"></span>
                       <span class="text-[11px] text-muted" x-text="ex.muscle_group"></span>
                     </div>
-                    <div class="flex gap-1 mt-0.5" x-show="ex.is_core || ex.is_functional || ex.cardio_type !== 'none'">
+                    <div class="flex gap-1 mt-0.5" x-show="ex.is_core || ex.is_functional || ex.cardio_type !== 'none' || parseInt(ex.is_class)">
                       <span class="badge badge-core" x-show="ex.is_core" style="font-size:10px;padding:1px 5px">Core</span>
                       <span class="badge badge-func" x-show="ex.is_functional" style="font-size:10px;padding:1px 5px">Functional</span>
                       <span class="badge badge-hiit" x-show="ex.cardio_type === 'hiit'" style="font-size:10px;padding:1px 5px">HIIT</span>
                       <span class="badge badge-ss" x-show="ex.cardio_type === 'steady_state'" style="font-size:10px;padding:1px 5px">Steady</span>
+                      <span class="badge badge-mob" x-show="parseInt(ex.is_class)" style="font-size:10px;padding:1px 5px">Class</span>
                     </div>
                   </div>
                   <div class="flex gap-1.5 items-center flex-shrink-0">
@@ -445,6 +448,9 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
                   <label class="text-[11px]">YouTube Link <span class="font-normal text-muted2">(optional)</span></label>
                   <input type="url" name="new_ex_youtube" placeholder="https://youtube.com/...">
                 </div>
+                <label class="flex items-center gap-2 text-xs font-normal text-[var(--text)] cursor-pointer mb-3" style="text-transform:none;letter-spacing:0">
+                  <input type="checkbox" name="is_class" value="1" style="width:auto;-webkit-appearance:checkbox;appearance:checkbox"> This is a class (duration only, no reps)
+                </label>
                 <div class="flex gap-2">
                   <button type="submit" class="btn btn-primary btn-sm">Add Exercise</button>
                   <button type="button" class="btn btn-ghost btn-sm" x-on:click="showNew = false">Cancel</button>
@@ -465,9 +471,14 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
             <?php endforeach; ?>
           </select>
         </div>
-        <div class="form-row form-row-2">
-          <div><label>Sets</label><input type="number" name="sets_target" value="3" min="1"></div>
-          <div><label>Reps / Duration</label><input type="text" name="reps_target" value="10-12"></div>
+        <div x-show="!selectedIsClass" class="form-row form-row-2">
+          <div><label>Sets</label><input type="number" name="sets_target" value="3" min="1" :disabled="selectedIsClass"></div>
+          <div><label>Reps / Duration</label><input type="text" name="reps_target" value="10-12" :disabled="selectedIsClass"></div>
+        </div>
+        <div x-show="selectedIsClass" x-cloak class="form-group">
+          <label>Duration</label>
+          <input type="text" name="reps_target" value="60 min" placeholder="e.g. 60 min, 45 min">
+          <input type="hidden" name="sets_target" value="1">
         </div>
 
         <!-- Weak side emphasis (hidden toggle) -->

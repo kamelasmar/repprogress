@@ -114,7 +114,7 @@ $session_id = $session ? (int)$session['id'] : 0;
 // Get exercises for this day
 $exs = $db->prepare("
     SELECT pe.*, e.name, e.muscle_group, e.youtube_url, e.coach_tip,
-           e.is_mobility, e.is_core, e.is_functional, e.cardio_type AS ex_cardio,
+           e.is_mobility, e.is_core, e.is_functional, e.is_class, e.cardio_type AS ex_cardio,
            pe.is_left_priority, pe.both_sides, pe.sets_target, pe.reps_target,
            pe.sets_left, pe.reps_left_bonus, pe.section
     FROM plan_exercises pe JOIN exercises e ON pe.exercise_id=e.id
@@ -351,6 +351,16 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
     <input type="hidden" name="notes" value="">
     <input type="hidden" name="difficulty" x-model="difficulty">
 
+    <?php if ($e['is_class']): ?>
+    <!-- Class: duration only -->
+    <input type="hidden" name="set_number" value="1">
+    <input type="hidden" name="side" value="both">
+    <div class="form-group mb-2">
+      <label class="text-[10px]">Duration (min)</label>
+      <input type="number" name="duration_sec" min="1" placeholder="60" class="min-h-[44px] text-base">
+    </div>
+    <?php else: ?>
+    <!-- Regular exercise -->
     <div class="grid grid-cols-4 gap-2 mb-2">
       <div>
         <label class="text-[10px]">#</label>
@@ -375,6 +385,7 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
       <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="left" <?= $default_side==='left'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Left</label>
       <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="right" <?= $default_side==='right'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Right</label>
     </div>
+    <?php endif; ?>
 
     <!-- Difficulty pills -->
     <div class="flex items-center gap-2 mb-3">

@@ -176,6 +176,13 @@ function run_migrations(PDO $db): void {
         }
     } catch (Exception $e) {}
 
+    // ── Add is_class flag to exercises ──────────────────────────────
+    try {
+        $ecols2 = $db->query("SHOW COLUMNS FROM exercises")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('is_class', $ecols2))
+            $db->exec("ALTER TABLE exercises ADD COLUMN is_class TINYINT(1) DEFAULT 0");
+    } catch (Exception $e) {}
+
     // ── Recategorize legacy muscle groups ─────────────────────────────
     try {
         $db->exec("UPDATE exercises SET muscle_group='Back' WHERE muscle_group='Lats'");
