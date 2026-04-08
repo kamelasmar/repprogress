@@ -175,4 +175,32 @@ function run_migrations(PDO $db): void {
             }
         }
     } catch (Exception $e) {}
+
+    // ── Recategorize legacy muscle groups ─────────────────────────────
+    try {
+        $db->exec("UPDATE exercises SET muscle_group='Back' WHERE muscle_group='Lats'");
+        $db->exec("UPDATE exercises SET muscle_group='Quads' WHERE muscle_group='Legs'");
+        $db->exec("UPDATE exercises SET muscle_group='Mobility' WHERE muscle_group='Recovery'");
+        $db->exec("UPDATE exercises SET muscle_group='Chest' WHERE muscle_group='Serratus Anterior'");
+    } catch (Exception $e) {}
+
+    // ── One-time production cleanup (v2.0) ───────────────────────────
+    // Wipe test data, keep exercises and users. Safe to run repeatedly
+    // — only executes if the flag table doesn't have this migration.
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS _migrations (name VARCHAR(100) PRIMARY KEY, ran_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+        $done = $db->query("SELECT 1 FROM _migrations WHERE name='v2_cleanup'")->fetch();
+        if (!$done) {
+            $db->exec("SET FOREIGN_KEY_CHECKS=0");
+            $db->exec("TRUNCATE TABLE sets_log");
+            $db->exec("TRUNCATE TABLE sessions");
+            $db->exec("TRUNCATE TABLE plan_exercises");
+            $db->exec("TRUNCATE TABLE plan_days");
+            $db->exec("TRUNCATE TABLE plans");
+            $db->exec("TRUNCATE TABLE weight_log");
+            $db->exec("TRUNCATE TABLE shared_access");
+            $db->exec("SET FOREIGN_KEY_CHECKS=1");
+            $db->exec("INSERT INTO _migrations (name) VALUES ('v2_cleanup')");
+        }
+    } catch (Exception $e) {}
 }
