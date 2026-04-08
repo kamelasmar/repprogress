@@ -50,6 +50,22 @@ for ($w = 0; $w < 4; $w++) {
     $weeks[] = $row;
 }
 
+// Load exercises per day for the toggle view
+$exercises_by_day = [];
+if ($ap) {
+    $ex_st = $db->prepare("
+        SELECT pe.day_label, pe.section, pe.sets_target, pe.reps_target, e.name, e.muscle_group
+        FROM plan_exercises pe
+        JOIN exercises e ON pe.exercise_id = e.id
+        WHERE pe.plan_id = ?
+        ORDER BY pe.section_order, pe.sort_order
+    ");
+    $ex_st->execute([$ap['id']]);
+    foreach ($ex_st->fetchAll() as $row) {
+        $exercises_by_day[$row['day_label']][] = $row;
+    }
+}
+
 $dow_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 render_head('Schedule', 'schedule');
@@ -109,35 +125,57 @@ render_head('Schedule', 'schedule');
 </div>
 
 <!-- ── DAY-BY-DAY DETAIL ──────────────────────────────────────────────── -->
-<div class="card" style="margin-bottom:1.25rem">
+<div class="card mb-5">
   <div class="card-title">Training Days</div>
   <?php foreach ($plan_days as $pd):
     $pn = (int)preg_replace('/\D/', '', $pd['day_label']);
     $hiit = ($pd['cardio_type'] ?? 'none') === 'hiit';
     $ss   = ($pd['cardio_type'] ?? 'none') === 'steady_state';
-    // Count exercises for this day
-    $ex_count = $db->prepare("SELECT COUNT(*) FROM plan_exercises WHERE plan_id=? AND day_label=?");
-    $ex_count->execute([$ap['id'], $pd['day_label']]);
-    $num_ex = $ex_count->fetchColumn();
+    $day_exs = $exercises_by_day[$pd['day_label']] ?? [];
+    $num_ex = count($day_exs);
   ?>
-  <div style="display:grid;grid-template-columns:72px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);align-items:start">
-    <div style="text-align:center">
-      <div class="day-pill day-pill-<?= $pn ?>" style="font-size:11px;margin-bottom:4px"><?= htmlspecialchars($pd['day_label']) ?></div>
-      <div style="font-size:12px;color:var(--muted)"><?= $pd['week_day'] ?: 'TBD' ?></div>
-    </div>
-    <div>
-      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px"><?= htmlspecialchars($pd['day_title']) ?></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-        <?php if ($hiit || $ss): ?>
-        <span style="font-size:12px;padding:3px 10px;border-radius:5px;font-weight:600;
-          background:<?= $hiit?'var(--red-dim)':'var(--left-dim)' ?>;
-          color:<?= $hiit?'var(--red-text)':'var(--left-text)' ?>">
-          <?= $hiit ? 'HIIT' : 'Steady State' ?><?= $pd['cardio_description'] ? ' — '.htmlspecialchars($pd['cardio_description']) : '' ?>
-        </span>
-        <?php endif; ?>
-        <span style="font-size:12px;padding:3px 10px;border-radius:5px;background:var(--bg3);color:var(--muted)"><?= $num_ex ?> exercises</span>
+  <div class="py-4 border-b border-border-app" x-data="{ open: false }">
+    <div class="grid grid-cols-[72px_1fr] gap-4 items-start">
+      <div class="text-center">
+        <div class="day-pill day-pill-<?= $pn ?>" style="font-size:11px;margin-bottom:4px"><?= htmlspecialchars($pd['day_label']) ?></div>
+        <div class="text-xs text-muted"><?= $pd['week_day'] ?: 'TBD' ?></div>
       </div>
-      <a href="plan_builder.php?plan_id=<?= $ap['id'] ?>&day=<?= urlencode($pd['day_label']) ?>" style="font-size:12px">View in plan builder &rarr;</a>
+      <div>
+        <div class="text-[15px] font-bold text-[var(--text)] mb-1.5"><?= htmlspecialchars($pd['day_title']) ?></div>
+        <div class="flex gap-1.5 flex-wrap mb-2">
+          <?php if ($hiit || $ss): ?>
+          <span class="badge <?= $hiit ? 'badge-hiit' : 'badge-ss' ?>">
+            <?= $hiit ? 'HIIT' : 'Steady State' ?><?= $pd['cardio_description'] ? ' — '.htmlspecialchars($pd['cardio_description']) : '' ?>
+          </span>
+          <?php endif; ?>
+          <span class="text-xs px-2.5 py-0.5 rounded bg-bg3 text-muted"><?= $num_ex ?> exercise<?= $num_ex !== 1 ? 's' : '' ?></span>
+        </div>
+        <div class="flex gap-2 items-center flex-wrap">
+          <a href="workout.php?day=<?= urlencode($pd['day_label']) ?>" class="btn btn-primary btn-sm">💪 Start Workout</a>
+          <a href="plan_builder.php?plan_id=<?= $ap['id'] ?>&day=<?= urlencode($pd['day_label']) ?>" class="btn btn-ghost btn-sm">✏️ Edit</a>
+          <?php if ($num_ex > 0): ?>
+          <button type="button" class="btn btn-ghost btn-sm" x-on:click="open = !open" x-text="open ? 'Hide exercises' : 'Show exercises'">Show exercises</button>
+          <?php endif; ?>
+        </div>
+
+        <?php if ($num_ex > 0): ?>
+        <div x-show="open" x-transition x-cloak class="mt-3">
+          <?php
+          $current_section = '';
+          foreach ($day_exs as $ex):
+            if ($ex['section'] !== $current_section):
+              $current_section = $ex['section'];
+          ?>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-muted mt-2 mb-1"><?= htmlspecialchars($current_section) ?></div>
+          <?php endif; ?>
+          <div class="flex justify-between items-center py-1 text-sm">
+            <span class="text-[var(--text)]"><?= htmlspecialchars($ex['name']) ?> <span class="text-muted text-xs"><?= htmlspecialchars($ex['muscle_group']) ?></span></span>
+            <span class="text-xs text-muted"><?= $ex['sets_target'] ?> × <?= htmlspecialchars($ex['reps_target']) ?></span>
+          </div>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
   <?php endforeach; ?>
