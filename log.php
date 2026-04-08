@@ -56,6 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header("Location: log.php?session_id=".$sess_id); exit;
     }
+    if ($action === 'update_set') {
+        $db->prepare("UPDATE sets_log SET reps=?, weight_kg=?, side=?, difficulty=?, duration_sec=? WHERE id=? AND user_id=?")
+           ->execute([$_POST['reps'] ?: null, $_POST['weight_kg'] ?: null, $_POST['side'] ?: 'both', $_POST['difficulty'] ?: null, $_POST['duration_sec'] ?: null, $_POST['set_id'], $uid]);
+        flash('Set updated.');
+        header("Location: log.php?session_id=".$_POST['session_id']); exit;
+    }
     if ($action === 'delete_set') {
         $db->prepare("DELETE FROM sets_log WHERE id=? AND user_id=?")->execute([$_POST['set_id'], $uid]);
         flash('Set removed.');
@@ -186,33 +192,31 @@ render_head('Workout History','log');
       <div class="text-[13px] font-semibold text-[var(--text)] mb-1"><?= htmlspecialchars($ex_name) ?>
         <span class="text-xs text-muted font-normal"><?= htmlspecialchars($ex_sets[0]['muscle_group'] ?? '') ?></span>
       </div>
-      <table>
-        <thead><tr><th>Set</th><th>Side</th><th>Reps</th><th>Weight</th><th>Feel</th><th></th></tr></thead>
-        <tbody>
-        <?php foreach ($ex_sets as $st): ?>
-        <tr>
-          <td class="text-muted"><?= $st['set_number'] ?></td>
-          <td><span class="text-[11px] px-1.5 py-0.5 rounded <?= $st['side']==='left' ? 'bg-left-dim text-left-text' : ($st['side']==='right' ? 'bg-accent-dim text-accent-text' : 'bg-bg3 text-muted') ?>"><?= $st['side'] ?></span></td>
-          <td><?= $st['reps'] ?: '—' ?></td>
-          <td><?= $st['weight_kg'] ? $st['weight_kg'].' kg' : '—' ?></td>
-          <td>
-            <?php if (!empty($st['difficulty'])): ?>
-            <span class="text-[11px]"><?= $st['difficulty']==='easy' ? '😊' : ($st['difficulty']==='hard' ? '😤' : '😐') ?></span>
-            <?php else: ?>—<?php endif; ?>
-          </td>
-          <td>
-            <form method="post" class="inline" x-data x-on:submit="if (!confirm('Delete this set?')) $event.preventDefault()">
-              <?= csrf_field() ?>
-              <input type="hidden" name="action" value="delete_set">
-              <input type="hidden" name="set_id" value="<?= $st['id'] ?>">
-              <input type="hidden" name="session_id" value="<?= $s['id'] ?>">
-              <button class="btn btn-danger btn-sm" style="padding:2px 6px">×</button>
-            </form>
-          </td>
-        </tr>
-        <?php endforeach; ?>
-        </tbody>
-      </table>
+      <?php foreach ($ex_sets as $st): ?>
+      <div x-data="{ editing: false }" class="py-1 border-b border-border-app">
+        <div x-show="!editing" class="flex items-center gap-3 text-sm cursor-pointer" x-on:click="editing = true" title="Click to edit">
+          <span class="text-muted text-xs w-5"><?= $st['set_number'] ?></span>
+          <span class="text-[11px] px-1.5 py-0.5 rounded <?= $st['side']==='left' ? 'bg-left-dim text-left-text' : ($st['side']==='right' ? 'bg-accent-dim text-accent-text' : 'bg-bg3 text-muted') ?>"><?= $st['side'] ?></span>
+          <span><?= $st['reps'] ?: '—' ?> reps</span>
+          <span><?= $st['weight_kg'] ? $st['weight_kg'].' kg' : '—' ?></span>
+          <span class="text-[11px]"><?php if (!empty($st['difficulty'])): ?><?= $st['difficulty']==='easy' ? '😊' : ($st['difficulty']==='hard' ? '😤' : '😐') ?><?php endif; ?></span>
+          <span class="text-muted2 text-[10px] ml-auto">✏️</span>
+        </div>
+        <form x-show="editing" x-transition x-cloak method="post" class="flex items-end gap-2 flex-wrap py-1">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="update_set">
+          <input type="hidden" name="set_id" value="<?= $st['id'] ?>">
+          <input type="hidden" name="session_id" value="<?= $s['id'] ?>">
+          <div style="width:55px"><label class="text-[10px]">Reps</label><input type="number" name="reps" value="<?= $st['reps'] ?>" min="1" class="min-h-[36px] text-sm"></div>
+          <div style="width:60px"><label class="text-[10px]">kg</label><input type="number" name="weight_kg" value="<?= $st['weight_kg'] ?>" step="0.5" min="0" class="min-h-[36px] text-sm"></div>
+          <div style="width:55px"><label class="text-[10px]">Rest</label><input type="number" name="duration_sec" value="<?= $st['duration_sec'] ?>" min="0" class="min-h-[36px] text-sm"></div>
+          <div style="width:65px"><label class="text-[10px]">Side</label><select name="side" class="min-h-[36px] text-sm"><option value="both" <?= $st['side']==='both'?'selected':'' ?>>Both</option><option value="left" <?= $st['side']==='left'?'selected':'' ?>>Left</option><option value="right" <?= $st['side']==='right'?'selected':'' ?>>Right</option></select></div>
+          <div style="width:70px"><label class="text-[10px]">Feel</label><select name="difficulty" class="min-h-[36px] text-sm"><option value="">—</option><option value="easy" <?= ($st['difficulty']??'')==='easy'?'selected':'' ?>>😊</option><option value="medium" <?= ($st['difficulty']??'')==='medium'?'selected':'' ?>>😐</option><option value="hard" <?= ($st['difficulty']??'')==='hard'?'selected':'' ?>>😤</option></select></div>
+          <button type="submit" class="btn btn-primary btn-sm" style="padding:4px 10px;min-height:36px">Save</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="padding:4px 10px;min-height:36px" x-on:click="editing = false">✕</button>
+        </form>
+      </div>
+      <?php endforeach; ?>
     </div>
     <?php endforeach; ?>
 
