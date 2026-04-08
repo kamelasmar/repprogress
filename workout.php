@@ -302,14 +302,14 @@ render_head('Workout', 'workout');
     <?php foreach ($ex_sets as $i => $s): ?>
     <div x-data="{ editing: false }" class="py-1.5 border-b border-border-app <?= ($i === count($ex_sets) - 1 && isset($_GET['day'])) ? 'animate-highlight' : '' ?>">
       <!-- View mode -->
-      <div x-show="!editing" class="flex items-center gap-3 text-sm cursor-pointer" x-on:click="editing = true" title="Click to edit">
-        <span class="text-muted text-xs w-5"><?= $s['set_number'] ?></span>
-        <span class="text-[11px] px-1.5 py-0.5 rounded <?= $s['side']==='left' ? 'bg-left-dim text-left-text' : ($s['side']==='right' ? 'bg-accent-dim text-accent-text' : 'bg-bg3 text-muted') ?>"><?= $s['side'] ?></span>
-        <span><?= $s['reps'] ?: '—' ?> reps</span>
-        <span><?= $s['weight_kg'] ? $s['weight_kg'].' kg' : '—' ?></span>
-        <?php if ($s['duration_sec']): ?><span class="text-muted"><?= $s['duration_sec'] ?>s rest</span><?php endif; ?>
-        <span class="text-[11px]"><?php if (!empty($s['difficulty'])): ?><?= $s['difficulty']==='easy' ? '😊' : ($s['difficulty']==='hard' ? '😤' : '😐') ?><?php endif; ?></span>
-        <span class="text-muted2 text-[10px] ml-auto">✏️</span>
+      <div x-show="!editing" class="flex items-center gap-0 text-sm cursor-pointer bg-bg3 rounded-app overflow-hidden" x-on:click="editing = true" title="Click to edit">
+        <span class="bg-surface2 text-muted text-xs font-bold px-3 py-2 text-center" style="min-width:36px"><?= $s['set_number'] ?></span>
+        <span class="px-2.5 py-2 text-[11px] <?= $s['side']==='left' ? 'bg-left-dim text-left-text' : ($s['side']==='right' ? 'bg-accent-dim text-accent-text' : 'text-muted') ?>"><?= ucfirst($s['side']) ?></span>
+        <span class="px-2.5 py-2 font-semibold"><?= $s['reps'] ?: '—' ?><span class="text-muted font-normal text-xs"> reps</span></span>
+        <span class="px-2.5 py-2 font-semibold"><?= $s['weight_kg'] ? $s['weight_kg'] : '—' ?><span class="text-muted font-normal text-xs"> kg</span></span>
+        <?php if ($s['duration_sec']): ?><span class="px-2.5 py-2 text-muted text-xs"><?= $s['duration_sec'] ?>s rest</span><?php endif; ?>
+        <?php if (!empty($s['difficulty'])): ?><span class="px-2 py-2 text-[13px]"><?= $s['difficulty']==='easy' ? '😊' : ($s['difficulty']==='hard' ? '😤' : '😐') ?></span><?php endif; ?>
+        <span class="text-muted2 text-[10px] ml-auto pr-3">✏️</span>
       </div>
       <!-- Edit mode -->
       <form x-show="editing" x-transition x-cloak method="post" class="flex items-end gap-2 flex-wrap">

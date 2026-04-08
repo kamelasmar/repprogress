@@ -194,13 +194,13 @@ render_head('Workout History','log');
       </div>
       <?php foreach ($ex_sets as $st): ?>
       <div x-data="{ editing: false }" class="py-1 border-b border-border-app">
-        <div x-show="!editing" class="flex items-center gap-3 text-sm cursor-pointer" x-on:click="editing = true" title="Click to edit">
-          <span class="text-muted text-xs w-5"><?= $st['set_number'] ?></span>
-          <span class="text-[11px] px-1.5 py-0.5 rounded <?= $st['side']==='left' ? 'bg-left-dim text-left-text' : ($st['side']==='right' ? 'bg-accent-dim text-accent-text' : 'bg-bg3 text-muted') ?>"><?= $st['side'] ?></span>
-          <span><?= $st['reps'] ?: '—' ?> reps</span>
-          <span><?= $st['weight_kg'] ? $st['weight_kg'].' kg' : '—' ?></span>
-          <span class="text-[11px]"><?php if (!empty($st['difficulty'])): ?><?= $st['difficulty']==='easy' ? '😊' : ($st['difficulty']==='hard' ? '😤' : '😐') ?><?php endif; ?></span>
-          <span class="text-muted2 text-[10px] ml-auto">✏️</span>
+        <div x-show="!editing" class="flex items-center gap-0 text-sm cursor-pointer bg-bg3 rounded-app overflow-hidden" x-on:click="editing = true" title="Click to edit">
+          <span class="bg-surface2 text-muted text-xs font-bold px-3 py-2 text-center" style="min-width:36px"><?= $st['set_number'] ?></span>
+          <span class="px-2.5 py-2 text-[11px] <?= $st['side']==='left' ? 'bg-left-dim text-left-text' : ($st['side']==='right' ? 'bg-accent-dim text-accent-text' : 'text-muted') ?>"><?= ucfirst($st['side']) ?></span>
+          <span class="px-2.5 py-2 font-semibold"><?= $st['reps'] ?: '—' ?><span class="text-muted font-normal text-xs"> reps</span></span>
+          <span class="px-2.5 py-2 font-semibold"><?= $st['weight_kg'] ? $st['weight_kg'] : '—' ?><span class="text-muted font-normal text-xs"> kg</span></span>
+          <?php if (!empty($st['difficulty'])): ?><span class="px-2 py-2 text-[13px]"><?= $st['difficulty']==='easy' ? '😊' : ($st['difficulty']==='hard' ? '😤' : '😐') ?></span><?php endif; ?>
+          <span class="text-muted2 text-[10px] ml-auto pr-3">✏️</span>
         </div>
         <form x-show="editing" x-transition x-cloak method="post" class="flex items-end gap-2 flex-wrap py-1">
           <?= csrf_field() ?>
