@@ -282,7 +282,7 @@ render_head('Plans', 'plans');
   <?php if (openai_api_key_configured()): ?>
   <div x-show="tab === 'ai'" x-transition x-cloak>
     <p class="text-[13px] text-muted mb-4 leading-relaxed">Answer a few questions and AI will generate a starting plan for you to customise.</p>
-    <form method="post" action="ai_builder.php" id="ai-form">
+    <form method="post" action="ai_builder.php" id="ai-form" x-data="{ submitting: false }" x-on:submit="submitting = true">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="generate">
       <div class="form-group">
@@ -348,15 +348,8 @@ render_head('Plans', 'plans');
         <label>Additional Details <span style="font-weight:400;color:var(--muted2)">(optional)</span></label>
         <textarea name="details" rows="3" maxlength="500" placeholder="e.g. Bad left knee, prefer dumbbells over barbells, want extra hip mobility work..."></textarea>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm" id="ai-submit-btn">Generate Plan &rarr;</button>
+      <button type="submit" class="btn btn-primary btn-sm" :disabled="submitting" x-text="submitting ? 'Generating your plan...' : 'Generate Plan →'">Generate Plan →</button>
     </form>
-    <script>
-    document.getElementById('ai-form').addEventListener('submit', function() {
-        var btn = document.getElementById('ai-submit-btn');
-        btn.disabled = true;
-        btn.textContent = 'Generating your plan...';
-    });
-    </script>
   </div>
   <?php endif; ?>
 

@@ -190,7 +190,7 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
   <div class="ok">
     <h2>Installation complete!</h2>
     <div class="logline">Database configured and admin account created.</div>
-    <div class="warn-box" style="margin-top:1rem">
+    <div class="warn-box mt-4">
       <strong>Security:</strong> Delete <code>install.php</code> once you're done.
     </div>
     <a href="login.php" class="go">Sign in to Repprogress</a>
@@ -202,7 +202,7 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
   <p class="tagline">Set up the administrator account for Repprogress</p>
 
   <?php if($log): ?>
-  <div class="ok" style="margin-bottom:1.25rem">
+  <div class="ok mb-5">
     <?php foreach($log as $l): ?>
     <div class="logline"><?= $l ?></div>
     <?php endforeach; ?>
@@ -233,15 +233,15 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
         value="<?= htmlspecialchars($_POST['admin_phone']??'') ?>"
         placeholder="+1 (555) 123-4567" required>
     </div>
-    <div style="display:flex;gap:12px">
-      <div class="field" style="flex:1">
+    <div class="flex gap-3">
+      <div class="field flex-1">
         <label>Date of Birth</label>
         <input type="date" name="admin_dob"
           value="<?= htmlspecialchars($_POST['admin_dob']??'') ?>">
       </div>
-      <div class="field" style="flex:1">
+      <div class="field flex-1">
         <label>Country</label>
-        <select name="admin_country" style="width:100%;padding:10px 12px;border:1px solid #e8e6e0;border-radius:8px;font-size:14px;color:#1a1916;font-family:inherit">
+        <select name="admin_country" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 font-inherit">
           <option value="">-- Select --</option>
           <?php
           require_once __DIR__.'/includes/layout.php';
@@ -316,8 +316,8 @@ code{background:#f0ede6;padding:1px 6px;border-radius:3px;font-size:12px;font-fa
       <input type="password" name="db_pass" placeholder="your database user password">
     </div>
 
-    <div style="border-top:1px solid #e8e6e0;padding-top:1.25rem;margin-top:1.25rem">
-      <div class="steps-title" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#7a7872;margin-bottom:10px">App Settings</div>
+    <div class="border-t border-gray-200 pt-5 mt-5">
+      <div class="steps-title text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5">App Settings</div>
       <div class="field">
         <label>Email From Address <span class="label-hint">for verification emails</span></label>
         <input type="email" name="mail_from"

@@ -55,13 +55,13 @@ render_head('Create Account', '', true);
 ?>
 
 <div class="auth-box">
-  <div style="text-align:center;margin-bottom:2rem">
-    <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Repprogress</div>
-    <div style="color:var(--muted);font-size:14px;margin-top:4px">Create your account</div>
+  <div class="text-center mb-8">
+    <div class="text-2xl font-bold -tracking-0.3">Repprogress</div>
+    <div class="text-muted text-sm mt-1">Create your account</div>
   </div>
 
   <?php if ($errors): ?>
-  <div class="flash flash-error" style="margin-bottom:1rem">
+  <div class="flash flash-error mb-4">
     <?php foreach ($errors as $e): ?>
       <div><?= htmlspecialchars($e) ?></div>
     <?php endforeach; ?>
@@ -122,13 +122,13 @@ render_head('Create Account', '', true);
                placeholder="Re-enter your password">
       </div>
 
-      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.5rem">
+      <button type="submit" class="btn btn-primary w-full justify-center mt-2">
         Create Account
       </button>
     </form>
   </div>
 
-  <div style="text-align:center;margin-top:1.25rem;font-size:14px;color:var(--muted)">
+  <div class="text-center mt-5 text-sm text-muted">
     Already have an account? <a href="login.php">Sign in</a>
   </div>
 </div>

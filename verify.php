@@ -55,31 +55,31 @@ render_head('Verify Email', '', true);
 ?>
 
 <div class="auth-box">
-  <div style="text-align:center;margin-bottom:2rem">
-    <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Repprogress</div>
-    <div style="color:var(--muted);font-size:14px;margin-top:4px">Verify your email</div>
+  <div class="text-center mb-8">
+    <div class="text-2xl font-bold -tracking-0.3">Repprogress</div>
+    <div class="text-muted text-sm mt-1">Verify your email</div>
   </div>
 
-  <div class="card" style="text-align:center">
-    <div style="font-size:48px;margin-bottom:1rem">&#9993;</div>
-    <p style="font-size:15px;line-height:1.6;margin-bottom:1rem">
+  <div class="card text-center">
+    <div class="text-6xl mb-4">&#9993;</div>
+    <p class="text-base leading-relaxed mb-4">
       We sent a verification link to<br>
-      <strong style="color:var(--accent-text)"><?= htmlspecialchars($user['email'] ?? '') ?></strong>
+      <strong class="text-accent-text"><?= htmlspecialchars($user['email'] ?? '') ?></strong>
     </p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">
+    <p class="text-xs text-muted mb-6">
       Click the link in your email to activate your account.<br>
       The link expires in 24 hours.
     </p>
 
-    <form method="post" style="margin-bottom:1rem">
+    <form method="post" class="mb-4">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="resend">
-      <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center">
+      <button type="submit" class="btn btn-ghost w-full justify-center">
         Resend Verification Email
       </button>
     </form>
 
-    <a href="logout.php" style="font-size:13px;color:var(--muted)">Sign out</a>
+    <a href="logout.php" class="text-xs text-muted">Sign out</a>
   </div>
 </div>
 

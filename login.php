@@ -42,14 +42,14 @@ render_head('Sign In', '', true);
 ?>
 
 <div class="auth-box">
-  <div style="text-align:center;margin-bottom:2rem">
-    <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Repprogress</div>
-    <div style="color:var(--accent-text);font-size:14px;margin-top:6px;font-weight:500">Track every rep. Own every side. See the progress.</div>
-    <div style="color:var(--muted);font-size:13px;margin-top:8px">Sign in to your account</div>
+  <div class="text-center mb-8">
+    <div class="text-2xl font-bold -tracking-0.3">Repprogress</div>
+    <div class="text-accent-text text-sm font-medium mt-1.5">Track every rep. Own every side. See the progress.</div>
+    <div class="text-muted text-xs mt-2">Sign in to your account</div>
   </div>
 
   <?php if ($error): ?>
-  <div class="flash flash-error" style="margin-bottom:1rem"><?= htmlspecialchars($error) ?></div>
+  <div class="flash flash-error mb-4"><?= htmlspecialchars($error) ?></div>
   <?php endif; ?>
 
   <div class="card">
@@ -69,13 +69,13 @@ render_head('Sign In', '', true);
                placeholder="Your password">
       </div>
 
-      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.5rem">
+      <button type="submit" class="btn btn-primary w-full justify-center mt-2">
         Sign In
       </button>
     </form>
   </div>
 
-  <div style="text-align:center;margin-top:1.25rem;font-size:14px;color:var(--muted)">
+  <div class="text-center mt-5 text-sm text-muted">
     Don't have an account? <a href="register.php">Create one</a>
   </div>
 </div>
