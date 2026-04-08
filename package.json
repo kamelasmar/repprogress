@@ -1,0 +1,32 @@
+{
+  "name": "repprogress",
+  "version": "1.0.0",
+  "description": "A multi-user PHP/MySQL workout tracker with body composition tracking, exercise programme management, and progressive overload monitoring.",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamelasmar/repprogress.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kamelasmar/repprogress/issues"
+  },
+  "homepage": "https://github.com/kamelasmar/repprogress#readme",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.7"
+  },
+  "dependencies": {
+    "alpinejs": "^3.15.11"
+  }
+}

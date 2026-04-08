@@ -20,3 +20,6 @@ desktop.ini
 
 # ── Uploads / user data ───────────────────────────────────────────────────────
 uploads/
+
+# ── Node / frontend build ─────────────────────────────────────────────────────
+node_modules/
