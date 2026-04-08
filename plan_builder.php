@@ -127,12 +127,12 @@ $sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation
 render_head('Plan Builder — '.$plan['name'], 'plans');
 ?>
 
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap">
-  <a href="plan_manager.php" style="color:var(--muted);font-size:14px">← Plans</a>
-  <div style="flex:1">
+<div class="flex items-center gap-3 mb-5 flex-wrap">
+  <a href="plan_manager.php" class="text-muted text-sm">← Plans</a>
+  <div class="flex-1">
     <div class="page-title"><?= htmlspecialchars($plan['name']) ?></div>
     <div class="page-sub">Phase <?= $plan['phase_number'] ?> · <?= $plan['weeks_duration'] ?> weeks
-      <?= $plan['is_active'] ? ' · <span style="color:var(--accent);font-weight:600">ACTIVE</span>' : '' ?>
+      <?= $plan['is_active'] ? ' · <span class="text-accent-text font-semibold">ACTIVE</span>' : '' ?>
     </div>
   </div>
   <?php if (!$plan['is_active']): ?>
@@ -140,13 +140,13 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="activate">
     <input type="hidden" name="plan_id" value="<?= $plan_id ?>">
-    <button class="btn btn-primary btn-sm">&#9654; Activate This Plan</button>
+    <button class="btn btn-primary btn-sm">▶ Activate This Plan</button>
   </form>
   <?php endif; ?>
 </div>
 
 <!-- Day tabs -->
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">
+<div class="flex gap-2 flex-wrap mb-5">
   <?php foreach ($plan_days as $pd):
     $pn = (int)preg_replace('/\D/', '', $pd['day_label']);
     $isActive = $pd['day_label'] === $active_day;
@@ -158,51 +158,63 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
   <?php endforeach; ?>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start">
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
 
 <!-- Left: current day exercises -->
 <div>
-  <!-- Day header config -->
+  <!-- Day header config (collapsible) -->
   <?php if ($day_config): ?>
-  <div class="card" style="margin-bottom:1.25rem">
-    <div class="card-title">Day Settings</div>
-    <form method="post">
-      <?= csrf_field() ?>
-      <input type="hidden" name="action" value="update_day">
-      <input type="hidden" name="day_label" value="<?= $active_day ?>">
-      <div class="form-row form-row-3">
-        <div><label>Day Title</label><input type="text" name="day_title" value="<?= htmlspecialchars($day_config['day_title']) ?>"></div>
-        <div>
-          <label>Recommended Day</label>
-          <select name="week_day">
-            <?php foreach (['Tue','Wed','Thu','Fri','Sat','Sun','Mon'] as $d): ?>
-            <option value="<?= $d ?>" <?= $day_config['week_day']===$d?'selected':'' ?>><?= $d ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div>
-          <label>Cardio Type</label>
-          <select name="cardio_type">
-            <option value="none" <?= $day_config['cardio_type']==='none'?'selected':'' ?>>None</option>
-            <option value="steady_state" <?= $day_config['cardio_type']==='steady_state'?'selected':'' ?>>Steady State</option>
-            <option value="hiit" <?= $day_config['cardio_type']==='hiit'?'selected':'' ?>>HIIT</option>
-          </select>
+  <div class="card mb-5" x-data="{ open: false }">
+    <div class="flex justify-between items-center cursor-pointer" x-on:click="open = !open">
+      <div>
+        <div class="card-title mb-0">Day Settings</div>
+        <div class="text-xs text-muted mt-1">
+          <?= htmlspecialchars($day_config['day_title']) ?>
+          <?= $day_config['week_day'] ? ' · ' . $day_config['week_day'] : '' ?>
+          <?= $day_config['cardio_type'] !== 'none' ? ' · ' . ucfirst(str_replace('_', ' ', $day_config['cardio_type'])) : '' ?>
         </div>
       </div>
-      <div class="form-group">
-        <label>Cardio Description</label>
-        <input type="text" name="cardio_description" value="<?= htmlspecialchars($day_config['cardio_description']??'') ?>" placeholder="e.g. Rowing 10 min Zone 2">
-      </div>
-      <button type="submit" class="btn btn-ghost btn-sm">Save Day Settings</button>
-    </form>
+      <span class="btn btn-ghost btn-sm" x-text="open ? 'Close' : 'Edit'">Edit</span>
+    </div>
+    <div x-show="open" x-transition x-cloak class="mt-4">
+      <form method="post">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="update_day">
+        <input type="hidden" name="day_label" value="<?= $active_day ?>">
+        <div class="form-row form-row-3">
+          <div><label>Day Title</label><input type="text" name="day_title" value="<?= htmlspecialchars($day_config['day_title']) ?>"></div>
+          <div>
+            <label>Recommended Day</label>
+            <select name="week_day">
+              <?php foreach (['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as $d): ?>
+              <option value="<?= $d ?>" <?= $day_config['week_day']===$d?'selected':'' ?>><?= $d ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div>
+            <label>Cardio Type</label>
+            <select name="cardio_type">
+              <option value="none" <?= $day_config['cardio_type']==='none'?'selected':'' ?>>None</option>
+              <option value="steady_state" <?= $day_config['cardio_type']==='steady_state'?'selected':'' ?>>Steady State</option>
+              <option value="hiit" <?= $day_config['cardio_type']==='hiit'?'selected':'' ?>>HIIT</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Cardio Description</label>
+          <input type="text" name="cardio_description" value="<?= htmlspecialchars($day_config['cardio_description']??'') ?>" placeholder="e.g. Rowing 10 min Zone 2">
+        </div>
+        <button type="submit" class="btn btn-ghost btn-sm">Save Day Settings</button>
+      </form>
+    </div>
   </div>
   <?php endif; ?>
 
   <!-- Exercise list -->
   <div class="card">
-    <div class="card-title" style="display:flex;justify-content:space-between">
+    <div class="card-title flex justify-between">
       <span><?= htmlspecialchars($active_day) ?> — <?= count($plan_exs) ?> exercises</span>
-      <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted)">
+      <span class="font-normal normal-case tracking-normal text-xs text-muted">
         <?= $day_config ? htmlspecialchars($day_config['day_title']) : '' ?>
       </span>
     </div>
@@ -211,41 +223,38 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
     <?php foreach ($by_section as $section => $exs): ?>
     <div class="section-hdr"><?= htmlspecialchars($section) ?></div>
     <?php foreach ($exs as $e): ?>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:start">
+    <div class="grid grid-cols-[1fr_auto] gap-3 py-2.5 border-b border-border-app items-start">
       <div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
-          <span style="font-weight:600;font-size:14px"><?= htmlspecialchars($e['name']) ?></span>
-          <span style="font-size:12px;color:var(--muted)"><?= $e['muscle_group'] ?></span>
+        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+          <span class="font-semibold text-sm"><?= htmlspecialchars($e['name']) ?></span>
+          <span class="text-xs text-muted"><?= $e['muscle_group'] ?></span>
           <?php if ($e['is_left_priority']): ?><span class="badge badge-left">Left+</span><?php endif; ?>
-          <?php if ($e['both_sides']): ?><span class="badge" style="background:var(--bg);color:var(--muted);border:1px solid var(--border)">Both sides</span><?php endif; ?>
+          <?php if ($e['both_sides']): ?><span class="badge bg-bg text-muted border border-border-app">Both sides</span><?php endif; ?>
           <?php if ($e['ex_cardio']==='hiit'): ?><span class="badge badge-hiit">HIIT</span><?php endif; ?>
           <?php if ($e['ex_cardio']==='steady_state'): ?><span class="badge badge-ss">Steady State</span><?php endif; ?>
           <?php if ($e['is_core']): ?><span class="badge badge-core">Core</span><?php endif; ?>
           <?php if ($e['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
         </div>
-        <div style="font-size:12px;color:var(--muted)">
+        <div class="text-xs text-muted">
           <?= $e['sets_target'] ?> sets · <?= htmlspecialchars($e['reps_target']) ?>
           <?php if ($e['is_left_priority'] && ($e['sets_left'] || $e['reps_left_bonus'])): ?>
-          <span style="color:var(--left)"> · Left: +<?= $e['sets_left'] ?> sets, +<?= $e['reps_left_bonus'] ?> reps</span>
+          <span class="text-left-text"> · Left: +<?= $e['sets_left'] ?> sets, +<?= $e['reps_left_bonus'] ?> reps</span>
           <?php endif; ?>
           <?php if ($e['notes']): ?>
           · <em><?= htmlspecialchars($e['notes']) ?></em>
           <?php endif; ?>
         </div>
       </div>
-      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-        <!-- Move up/down -->
-        <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="up"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm" style="padding:4px 8px">&uarr;</button></form>
-        <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="down"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm" style="padding:4px 8px">&darr;</button></form>
-        <!-- Edit inline -->
+      <div class="flex gap-1 items-center flex-wrap justify-end">
+        <form method="post" class="inline"><?= csrf_field() ?><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="up"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm px-2 py-1">↑</button></form>
+        <form method="post" class="inline"><?= csrf_field() ?><input type="hidden" name="action" value="move"><input type="hidden" name="pe_id" value="<?= $e['id'] ?>"><input type="hidden" name="dir" value="down"><input type="hidden" name="day_label" value="<?= $active_day ?>"><button class="btn btn-ghost btn-sm px-2 py-1">↓</button></form>
         <button onclick="toggleEdit(<?= $e['id'] ?>)" class="btn btn-ghost btn-sm">Edit</button>
-        <!-- Remove -->
-        <form method="post" style="display:inline" onsubmit="return confirm('Remove from plan?')">
+        <form method="post" class="inline" x-data x-on:submit="if (!confirm('Remove from plan?')) $event.preventDefault()">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="remove_exercise">
           <input type="hidden" name="pe_id" value="<?= $e['id'] ?>">
           <input type="hidden" name="day_label" value="<?= $active_day ?>">
-          <button class="btn btn-danger btn-sm">&times;</button>
+          <button class="btn btn-danger btn-sm">×</button>
         </form>
         <?php if ($e['youtube_url']): ?>
         <a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt">▶</a>
@@ -253,33 +262,33 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
       </div>
     </div>
     <!-- Inline edit form (hidden by default) -->
-    <div id="edit-<?= $e['id'] ?>" style="display:none;background:var(--bg);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+    <div id="edit-<?= $e['id'] ?>" style="display:none" class="bg-bg rounded-app p-3 mb-2 border border-border-app">
       <form method="post">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="update_exercise">
         <input type="hidden" name="pe_id" value="<?= $e['id'] ?>">
         <input type="hidden" name="day_label" value="<?= $active_day ?>">
-        <div class="form-row form-row-4" style="margin-bottom:8px">
-          <div><label style="font-size:11px">Sets</label><input type="number" name="sets_target" value="<?= $e['sets_target'] ?>" min="1"></div>
-          <div><label style="font-size:11px">Reps / Duration</label><input type="text" name="reps_target" value="<?= htmlspecialchars($e['reps_target']) ?>"></div>
-          <div><label style="font-size:11px">Extra L Sets</label><input type="number" name="sets_left" value="<?= $e['sets_left'] ?>" min="0"></div>
-          <div><label style="font-size:11px">Extra L Reps</label><input type="number" name="reps_left_bonus" value="<?= $e['reps_left_bonus'] ?>" min="0"></div>
+        <div class="form-row form-row-4 mb-2">
+          <div><label class="text-[11px]">Sets</label><input type="number" name="sets_target" value="<?= $e['sets_target'] ?>" min="1"></div>
+          <div><label class="text-[11px]">Reps / Duration</label><input type="text" name="reps_target" value="<?= htmlspecialchars($e['reps_target']) ?>"></div>
+          <div><label class="text-[11px]">Extra L Sets</label><input type="number" name="sets_left" value="<?= $e['sets_left'] ?>" min="0"></div>
+          <div><label class="text-[11px]">Extra L Reps</label><input type="number" name="reps_left_bonus" value="<?= $e['reps_left_bonus'] ?>" min="0"></div>
         </div>
-        <div class="form-row form-row-2" style="margin-bottom:8px">
+        <div class="form-row form-row-2 mb-2">
           <div>
-            <label style="font-size:11px">Section</label>
+            <label class="text-[11px]">Section</label>
             <select name="section">
               <?php foreach ($sections as $s): ?><option value="<?= $s ?>" <?= $e['section']===$s?'selected':'' ?>><?= $s ?></option><?php endforeach; ?>
             </select>
           </div>
-          <div><label style="font-size:11px">Notes</label><input type="text" name="notes" value="<?= htmlspecialchars($e['notes']??'') ?>"></div>
+          <div><label class="text-[11px]">Notes</label><input type="text" name="notes" value="<?= htmlspecialchars($e['notes']??'') ?>"></div>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:4px">
-          <label style="font-size:12px;display:flex;align-items:center;gap:6px;font-weight:500">
-            <input type="checkbox" name="is_left_priority" <?= $e['is_left_priority']?'checked':'' ?>> Left priority
+        <div class="flex gap-2 mb-1">
+          <label class="text-xs flex items-center gap-1.5 font-medium">
+            <input type="checkbox" name="is_left_priority" <?= $e['is_left_priority']?'checked':'' ?> style="-webkit-appearance:checkbox;appearance:checkbox;width:auto"> Left priority
           </label>
-          <label style="font-size:12px;display:flex;align-items:center;gap:6px;font-weight:500">
-            <input type="checkbox" name="both_sides" <?= $e['both_sides']?'checked':'' ?>> Both sides
+          <label class="text-xs flex items-center gap-1.5 font-medium">
+            <input type="checkbox" name="both_sides" <?= $e['both_sides']?'checked':'' ?> style="-webkit-appearance:checkbox;appearance:checkbox;width:auto"> Both sides
           </label>
         </div>
         <button type="submit" class="btn btn-primary btn-sm">Save</button>
@@ -289,81 +298,162 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
     <?php endforeach; ?>
     <?php endforeach; ?>
     <?php else: ?>
-    <div class="empty"><div class="empty-icon">➕</div><p>No exercises yet for <?= $active_day ?>. Add from the panel on the right.</p></div>
+    <div class="empty">
+      <div class="empty-icon">💪</div>
+      <p>This day is empty. Start building your workout by picking exercises from the panel.</p>
+      <?php if (openai_api_key_configured()): ?>
+      <a href="ai_builder.php" class="btn btn-ghost btn-sm mt-2">Or generate a plan with AI →</a>
+      <?php endif; ?>
+    </div>
     <?php endif; ?>
   </div>
 </div>
 
 <!-- Right: add exercise panel -->
 <div>
-  <div class="card" style="position:sticky;top:1rem">
+  <div class="card sticky top-4" x-data="exercisePicker()">
     <div class="card-title">Add Exercise</div>
-    <form method="post">
+    <form method="post" x-ref="addForm">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="add_exercise">
       <input type="hidden" name="day_label" value="<?= $active_day ?>">
+      <input type="hidden" name="exercise_id" x-model="selectedId">
+      <input type="hidden" name="section_order" x-model="sectionOrder">
+
+      <!-- Exercise picker -->
       <div class="form-group">
         <label>Exercise</label>
-        <select name="exercise_id" required>
-          <option value="">— select from library —</option>
-          <?php foreach ($ex_by_mg as $mg => $exs): ?>
-          <optgroup label="<?= htmlspecialchars($mg) ?>">
-            <?php foreach ($exs as $e): ?>
-            <option value="<?= $e['id'] ?>"><?= htmlspecialchars($e['name']) ?><?= $e['is_core']?' (Core)':($e['is_functional']?' (Functional)':($e['cardio_type']!=='none'?' ('.ucfirst(str_replace('_',' ',$e['cardio_type'])).')':'')) ?></option>
+
+        <!-- Selected exercise display -->
+        <template x-if="selectedId">
+          <div class="flex items-center justify-between bg-accent-dim border border-accent rounded-app px-3 py-2 mb-2">
+            <span class="text-sm font-semibold text-accent-text" x-text="selectedName"></span>
+            <button type="button" class="text-accent-text text-lg leading-none cursor-pointer" style="background:none;border:none" x-on:click="clearSelection()">×</button>
+          </div>
+        </template>
+
+        <!-- Picker (shown when no selection) -->
+        <div x-show="!selectedId">
+          <!-- Search -->
+          <input type="text" x-model="search" placeholder="Search exercises..." class="mb-2">
+
+          <!-- Category pills -->
+          <div class="flex gap-1.5 flex-wrap mb-3">
+            <button type="button" class="btn btn-sm" :class="category === '' ? 'btn-primary' : 'btn-ghost'" x-on:click="category = ''">All</button>
+            <template x-for="cat in categories" :key="cat">
+              <button type="button" class="btn btn-sm" :class="category === cat ? 'btn-primary' : 'btn-ghost'" x-on:click="category = cat" x-text="cat"></button>
+            </template>
+          </div>
+
+          <!-- Exercise list -->
+          <div class="max-h-64 overflow-y-auto border border-border-app rounded-app">
+            <template x-for="ex in filteredExercises" :key="ex.id">
+              <div class="px-3 py-2 border-b border-border-app cursor-pointer hover:bg-bg3 transition-colors" x-on:click="selectExercise(ex)">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-sm font-semibold" x-text="ex.name"></span>
+                      <span class="text-[11px] text-muted" x-text="ex.muscle_group"></span>
+                    </div>
+                    <div class="flex gap-1 mt-0.5" x-show="ex.is_core || ex.is_functional || ex.cardio_type !== 'none'">
+                      <span class="badge badge-core" x-show="ex.is_core" style="font-size:10px;padding:1px 5px">Core</span>
+                      <span class="badge badge-func" x-show="ex.is_functional" style="font-size:10px;padding:1px 5px">Functional</span>
+                      <span class="badge badge-hiit" x-show="ex.cardio_type === 'hiit'" style="font-size:10px;padding:1px 5px">HIIT</span>
+                      <span class="badge badge-ss" x-show="ex.cardio_type === 'steady_state'" style="font-size:10px;padding:1px 5px">Steady</span>
+                    </div>
+                  </div>
+                  <span class="text-accent-text text-xs font-semibold flex-shrink-0">Select</span>
+                </div>
+              </div>
+            </template>
+            <div x-show="filteredExercises.length === 0" class="px-3 py-4 text-center text-xs text-muted">No exercises found</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rest of form (shown after selection) -->
+      <div x-show="selectedId" x-transition>
+        <div class="form-group">
+          <label>Section</label>
+          <select name="section" x-model="section" x-on:change="sectionOrder = sectionOrders[section] || 5">
+            <?php foreach ($sections as $s): ?>
+            <option value="<?= $s ?>"><?= $s ?></option>
             <?php endforeach; ?>
-          </optgroup>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Section</label>
-        <select name="section" id="section-sel" onchange="updateSectionOrder(this.value)">
-          <?php
-          $section_orders = ['Cardio Warm-Up'=>1,'Mobility'=>2,'Stretching'=>3,'Core Block A'=>4,'Activation'=>5,'Main Work'=>6,'Functional'=>7,'Finisher'=>8,'Core Block B'=>9,'Cool-Down'=>10,'Reset'=>11];
-          foreach ($sections as $s):
-          ?>
-          <option value="<?= $s ?>"><?= $s ?></option>
-          <?php endforeach; ?>
-        </select>
-        <input type="hidden" name="section_order" id="section-order" value="5">
-      </div>
-      <div class="form-row form-row-2">
-        <div><label>Sets</label><input type="number" name="sets_target" value="3" min="1"></div>
-        <div><label>Reps / Duration</label><input type="text" name="reps_target" value="10-12"></div>
-      </div>
-      <div id="left-options" style="background:var(--left-light);border-radius:8px;padding:10px;margin-bottom:1rem">
-        <div style="font-size:12px;font-weight:700;color:#0C447C;margin-bottom:8px">Left Side Emphasis</div>
-        <div class="form-row form-row-2" style="margin-bottom:8px">
-          <div><label style="font-size:11px">Extra L Sets</label><input type="number" name="sets_left" value="1" min="0"></div>
-          <div><label style="font-size:11px">Extra L Reps</label><input type="number" name="reps_left_bonus" value="2" min="0"></div>
+          </select>
         </div>
-        <div style="display:flex;gap:12px">
-          <label style="font-size:12px;display:flex;align-items:center;gap:6px">
-            <input type="checkbox" name="is_left_priority" checked> Left priority
-          </label>
-          <label style="font-size:12px;display:flex;align-items:center;gap:6px">
-            <input type="checkbox" name="both_sides" checked> Both sides
-          </label>
+        <div class="form-row form-row-2">
+          <div><label>Sets</label><input type="number" name="sets_target" value="3" min="1"></div>
+          <div><label>Reps / Duration</label><input type="text" name="reps_target" value="10-12"></div>
         </div>
+
+        <!-- Weak side emphasis (hidden toggle) -->
+        <div x-data="{ showWeak: false }" class="mb-4">
+          <button type="button" class="text-xs text-muted hover:text-[var(--text)] cursor-pointer" style="background:none;border:none;padding:0" x-show="!showWeak" x-on:click="showWeak = true">+ Add weak side emphasis</button>
+          <div x-show="showWeak" x-transition class="bg-left-dim border border-[rgba(91,159,214,0.25)] rounded-app p-3 mt-2">
+            <div class="text-xs font-bold text-left-text mb-2">Weak Side Emphasis</div>
+            <div class="form-row form-row-2 mb-2">
+              <div><label class="text-[11px]">Extra Sets</label><input type="number" name="sets_left" value="1" min="0"></div>
+              <div><label class="text-[11px]">Extra Reps</label><input type="number" name="reps_left_bonus" value="2" min="0"></div>
+            </div>
+            <div class="flex gap-3">
+              <label class="text-xs flex items-center gap-1.5">
+                <input type="checkbox" name="is_left_priority" checked style="-webkit-appearance:checkbox;appearance:checkbox;width:auto"> Priority side
+              </label>
+              <label class="text-xs flex items-center gap-1.5">
+                <input type="checkbox" name="both_sides" checked style="-webkit-appearance:checkbox;appearance:checkbox;width:auto"> Both sides
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <input type="text" name="notes" placeholder="e.g. 6 rounds, 20s/40s">
+        </div>
+        <button type="submit" class="btn btn-primary w-full" x-on:click="$el.disabled=true;$refs.addForm.submit()">Add to <?= $active_day ?></button>
       </div>
-      <div class="form-group">
-        <label>Notes (optional)</label>
-        <input type="text" name="notes" placeholder="e.g. 6 rounds, 20s/40s">
-      </div>
-      <button type="submit" class="btn btn-primary" style="width:100%" onclick="this.disabled=true;this.form.submit()">Add to <?= $active_day ?></button>
     </form>
   </div>
 </div>
 </div>
 
 <script>
+const exerciseData = <?= json_encode(array_values($all_ex)) ?>;
+const sectionOrderMap = <?= json_encode($section_orders) ?>;
+
+function exercisePicker() {
+  return {
+    exercises: exerciseData,
+    categories: [...new Set(exerciseData.map(e => e.muscle_group))].sort(),
+    category: '',
+    search: '',
+    selectedId: '',
+    selectedName: '',
+    section: 'Main Work',
+    sectionOrder: 6,
+    sectionOrders: sectionOrderMap,
+    get filteredExercises() {
+      return this.exercises.filter(e => {
+        const matchCat = !this.category || e.muscle_group === this.category;
+        const matchSearch = !this.search || e.name.toLowerCase().includes(this.search.toLowerCase());
+        return matchCat && matchSearch;
+      });
+    },
+    selectExercise(ex) {
+      this.selectedId = ex.id;
+      this.selectedName = ex.name;
+    },
+    clearSelection() {
+      this.selectedId = '';
+      this.selectedName = '';
+      this.search = '';
+    }
+  };
+}
+
 function toggleEdit(id) {
   var el = document.getElementById('edit-' + id);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-const sectionOrders = <?= json_encode($section_orders) ?>;
-function updateSectionOrder(val) {
-  document.getElementById('section-order').value = sectionOrders[val] || 5;
 }
 </script>
 
