@@ -16,7 +16,7 @@ function render_head(string $title, string $active = '', bool $auth_page = false
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1D9E75">
+<meta name="theme-color" content="#0f0f0f" id="meta-theme-color">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="<?= htmlspecialchars($description) ?>">
@@ -35,6 +35,9 @@ function render_head(string $title, string $active = '', bool $auth_page = false
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <?php endif; ?>
 <!-- Legacy CSS now in src/css/app.css via Tailwind layers -->
+<script>
+(function(){var t=localStorage.getItem('rp_theme');if(t){document.documentElement.setAttribute('data-theme',t);var m=document.getElementById('meta-theme-color');if(m)m.content=t==='light'?'#f5f5f5':'#0f0f0f';}})();
+</script>
 </head>
 <body>
 <?php if ($auth_page): ?>
@@ -98,6 +101,9 @@ else: ?>
         <span class="badge badge-admin" style="margin-left:4px">Admin</span>
       <?php endif; ?>
     </div>
+    <button type="button" class="nav-link" style="border:none;background:none;cursor:pointer;font-family:inherit;width:100%;text-align:left" onclick="var h=document.documentElement;var t=h.getAttribute('data-theme')==='light'?'':'light';h.setAttribute('data-theme',t);localStorage.setItem('rp_theme',t);">
+      <span class="nav-icon">&#9728;&#65039;</span><span id="theme-label">Theme</span>
+    </button>
     <a href="account.php" class="nav-link">
       <span class="nav-icon">&#9881;</span>Account
     </a>
@@ -174,7 +180,10 @@ function render_foot(bool $auth_page = false): void {
       </a>
       <?php endforeach; ?>
     </div>
-    <a href="logout.php" class="block text-center text-xs text-red-text py-2 border-t border-border-app no-underline">Log Out</a>
+    <div class="flex justify-between items-center border-t border-border-app pt-2 mt-1">
+      <button type="button" class="text-xs text-muted py-1 cursor-pointer" style="background:none;border:none" onclick="var h=document.documentElement;var t=h.getAttribute('data-theme')==='light'?'':'light';h.setAttribute('data-theme',t);localStorage.setItem('rp_theme',t);">&#9728;&#65039; Switch Theme</button>
+      <a href="logout.php" class="text-xs text-red-text py-1 no-underline">Log Out</a>
+    </div>
   </div>
   <div class="bottom-nav-inner">
     <?php foreach ($main_nav as $key => [$label, $href, $icon]): ?>
