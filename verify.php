@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'resen
     exit;
 }
 
-render_head('Verify Your Email', '', true);
+render_head('Verify Email | Repprogress', '', true);
 ?>
 
 <div class="auth-box">

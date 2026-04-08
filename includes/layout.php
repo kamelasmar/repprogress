@@ -21,15 +21,15 @@ function render_head(string $title, string $active = '', bool $auth_page = false
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="<?= htmlspecialchars($description) ?>">
 <meta name="robots" content="<?= $auth_page ? 'noindex, nofollow' : 'index, follow' ?>">
-<meta property="og:title" content="<?= htmlspecialchars($title) ?> — Repprogress">
+<meta property="og:title" content="<?= htmlspecialchars($title) ?> | Repprogress">
 <meta property="og:description" content="<?= htmlspecialchars($description) ?>">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Repprogress">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="<?= htmlspecialchars($title) ?> — Repprogress">
+<meta name="twitter:title" content="<?= htmlspecialchars($title) ?> | Repprogress">
 <meta name="twitter:description" content="<?= htmlspecialchars($description) ?>">
 <link rel="canonical" href="<?= htmlspecialchars((defined('APP_URL') ? rtrim(APP_URL, '/') : '') . $_SERVER['REQUEST_URI']) ?>">
-<title><?= htmlspecialchars($title) ?> — Repprogress</title>
+<title><?= htmlspecialchars($title) ?> | Repprogress</title>
 <?= vite_assets() ?>
 <?php if (!$auth_page): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>

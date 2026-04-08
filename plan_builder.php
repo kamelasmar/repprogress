@@ -277,7 +277,7 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
   <!-- Exercise list -->
   <div class="card">
     <div class="card-title flex justify-between">
-      <span><?= htmlspecialchars($active_day) ?> — <?= count($plan_exs) ?> exercises</span>
+      <span><?= htmlspecialchars($active_day) ?> · <?= count($plan_exs) ?> exercises</span>
       <span class="font-normal normal-case tracking-normal text-xs text-muted">
         <?= $day_config ? htmlspecialchars($day_config['day_title']) : '' ?>
       </span>

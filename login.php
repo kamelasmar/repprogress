@@ -38,14 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-render_head('Sign In to Repprogress', '', true);
+render_head('Sign In | Repprogress', '', true);
 ?>
 
 <div class="auth-box">
   <div class="text-center mb-8">
-    <div class="text-2xl font-bold -tracking-0.3">Repprogress</div>
-    <div class="text-accent-text text-sm font-medium mt-1.5">Track every rep. Own every side. See the progress.</div>
-    <div class="text-muted text-xs mt-2">Sign in to your account</div>
+    <div class="text-2xl font-bold -tracking-0.3">Rep<span class="text-accent-text">progress</span></div>
+    <div class="text-[var(--text)] text-sm font-medium mt-2">Your personal workout tracker</div>
+    <div class="text-muted text-xs mt-1.5 leading-relaxed">Build training plans, log every set, track body composition,<br>and see your progress over time.</div>
   </div>
 
   <?php if ($error): ?>
