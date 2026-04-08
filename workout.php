@@ -278,33 +278,37 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
 ?>
 <?php
     $pe_alts = $workout_alts[$e['id']] ?? [];
-    // Check if user switched to an alternative via GET param
-    $active_ex_id = $ex_id;
-    $active_ex_name = $e['name'];
-    $active_ex_yt = $e['youtube_url'];
-    $active_ex_tip = $e['coach_tip'];
-    $active_is_class = $e['is_class'];
-    if (isset($_GET['alt_' . $e['id']])) {
-        $chosen_alt = (int)$_GET['alt_' . $e['id']];
-        foreach ($pe_alts as $alt) {
-            if ($alt['alternative_exercise_id'] == $chosen_alt) {
-                $active_ex_id = $alt['alternative_exercise_id'];
-                $active_ex_name = $alt['name'];
-                $active_ex_yt = $alt['youtube_url'];
-                $active_ex_tip = $alt['coach_tip'];
-                $active_is_class = $alt['is_class'];
-                break;
-            }
-        }
+    // Build options array for Alpine: main exercise + alternatives
+    $ex_options = [[
+        'id' => $ex_id,
+        'name' => $e['name'],
+        'yt' => $e['youtube_url'] ?: '',
+        'tip' => $e['coach_tip'] ?: '',
+        'is_class' => (int)$e['is_class'],
+    ]];
+    foreach ($pe_alts as $alt) {
+        $ex_options[] = [
+            'id' => (int)$alt['alternative_exercise_id'],
+            'name' => $alt['name'],
+            'yt' => $alt['youtube_url'] ?: '',
+            'tip' => $alt['coach_tip'] ?: '',
+            'is_class' => (int)$alt['is_class'],
+        ];
     }
 ?>
 <div id="ex-<?= $ex_id ?>" class="card mb-2.5" style="border-left:3px solid <?= $col ?>"
-     x-data="{ difficulty: '' }">
+     x-data="{
+       difficulty: '',
+       options: <?= htmlspecialchars(json_encode($ex_options), ENT_QUOTES) ?>,
+       activeIdx: 0,
+       get active() { return this.options[this.activeIdx]; },
+       switchTo(idx) { this.activeIdx = idx; }
+     }">
   <!-- Exercise header -->
   <div class="flex justify-between items-start gap-2 mb-2">
     <div>
       <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
-        <span class="font-bold text-[15px] text-[var(--text)]"><?= htmlspecialchars($active_ex_name) ?></span>
+        <span class="font-bold text-[15px] text-[var(--text)]" x-text="active.name"><?= htmlspecialchars($e['name']) ?></span>
         <span class="text-xs text-muted"><?= htmlspecialchars($e['muscle_group']) ?></span>
         <?php if ($e['is_core']): ?><span class="badge badge-core">Core</span><?php endif; ?>
         <?php if ($e['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
@@ -321,28 +325,25 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
-      <?php if ($pe_alts): ?>
+      <?php if (count($ex_options) > 1): ?>
       <div class="flex items-center gap-1.5 mt-1 flex-wrap">
         <span class="text-[10px] text-muted uppercase font-semibold">Switch:</span>
-        <?php if ($active_ex_id !== $ex_id): ?>
-        <a href="workout.php?day=<?= urlencode($active_day) ?>#ex-<?= $ex_id ?>" class="text-[11px] px-2 py-0.5 rounded bg-bg3 text-muted no-underline hover:text-[var(--text)]"><?= htmlspecialchars($e['name']) ?></a>
-        <?php endif; ?>
-        <?php foreach ($pe_alts as $alt): ?>
-        <?php if ($alt['alternative_exercise_id'] != $active_ex_id): ?>
-        <a href="workout.php?day=<?= urlencode($active_day) ?>&alt_<?= $e['id'] ?>=<?= $alt['alternative_exercise_id'] ?>#ex-<?= $ex_id ?>" class="text-[11px] px-2 py-0.5 rounded bg-bg3 text-muted no-underline hover:text-[var(--text)]"><?= htmlspecialchars($alt['name']) ?></a>
-        <?php endif; ?>
-        <?php endforeach; ?>
+        <template x-for="(opt, idx) in options" :key="opt.id">
+          <button type="button"
+            class="text-[11px] px-2 py-0.5 rounded no-underline cursor-pointer"
+            :class="idx === activeIdx ? 'bg-accent-dim text-accent-text font-semibold' : 'bg-bg3 text-muted hover:text-[var(--text)]'"
+            style="border:none"
+            x-text="opt.name"
+            x-on:click="switchTo(idx)">
+          </button>
+        </template>
       </div>
       <?php endif; ?>
     </div>
-    <?php if ($active_ex_yt): ?>
-    <a href="<?= htmlspecialchars($active_ex_yt) ?>" target="_blank" class="btn-yt flex-shrink-0">▶ Watch</a>
-    <?php endif; ?>
+    <a x-show="active.yt" :href="active.yt" target="_blank" class="btn-yt flex-shrink-0">▶ Watch</a>
   </div>
 
-  <?php if ($active_ex_tip): ?>
-  <div class="coach-tip mb-2.5"><?= htmlspecialchars($active_ex_tip) ?></div>
-  <?php endif; ?>
+  <div x-show="active.tip" class="coach-tip mb-2.5" x-text="active.tip"></div>
 
   <!-- Logged sets -->
   <?php if ($ex_sets): ?>
@@ -365,7 +366,7 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
         <input type="hidden" name="action" value="update_set">
         <input type="hidden" name="set_id" value="<?= $s['id'] ?>">
         <input type="hidden" name="session_id" value="<?= $session_id ?>">
-        <input type="hidden" name="exercise_id" value="<?= $active_ex_id ?>">
+        <input type="hidden" name="exercise_id" :value="active.id" value="<?= $ex_id ?>">
         <div style="width:55px"><label class="text-[10px]">Reps</label><input type="number" name="reps" value="<?= $s['reps'] ?>" min="1" class="min-h-[36px] text-sm"></div>
         <div style="width:60px"><label class="text-[10px]">kg</label><input type="number" name="weight_kg" value="<?= $s['weight_kg'] ?>" step="0.5" min="0" class="min-h-[36px] text-sm"></div>
         <div style="width:55px"><label class="text-[10px]">Rest</label><input type="number" name="duration_sec" value="<?= $s['duration_sec'] ?>" min="0" class="min-h-[36px] text-sm"></div>
@@ -392,46 +393,47 @@ render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Lo
     <input type="hidden" name="action" value="log_set">
     <input type="hidden" name="submit_token" value="<?= bin2hex(random_bytes(16)) ?>">
     <input type="hidden" name="session_id" value="<?= $session_id ?>">
-    <input type="hidden" name="exercise_id" value="<?= $active_ex_id ?>">
+    <input type="hidden" name="exercise_id" :value="active.id" value="<?= $ex_id ?>">
     <input type="hidden" name="day" value="<?= htmlspecialchars($active_day) ?>">
     <input type="hidden" name="notes" value="">
     <input type="hidden" name="difficulty" x-model="difficulty">
 
-    <?php if ($active_is_class): ?>
     <!-- Class: duration only -->
-    <input type="hidden" name="set_number" value="1">
-    <input type="hidden" name="side" value="both">
-    <div class="form-group mb-2">
-      <label class="text-[10px]">Duration (min)</label>
-      <input type="number" name="duration_sec" min="1" placeholder="60" class="min-h-[44px] text-base">
+    <div x-show="active.is_class" x-cloak>
+      <input type="hidden" name="set_number" value="1">
+      <input type="hidden" name="side" value="both">
+      <div class="form-group mb-2">
+        <label class="text-[10px]">Duration (min)</label>
+        <input type="number" name="duration_sec" min="1" placeholder="60" class="min-h-[44px] text-base">
+      </div>
     </div>
-    <?php else: ?>
     <!-- Regular exercise -->
-    <div class="grid grid-cols-4 gap-2 mb-2">
-      <div>
-        <label class="text-[10px]">#</label>
-        <input type="number" name="set_number" value="<?= $next_set ?>" min="1" required class="min-h-[44px] text-base">
+    <div x-show="!active.is_class">
+      <div class="grid grid-cols-4 gap-2 mb-2">
+        <div>
+          <label class="text-[10px]">#</label>
+          <input type="number" name="set_number" value="<?= $next_set ?>" min="1" class="min-h-[44px] text-base">
+        </div>
+        <div>
+          <label class="text-[10px]">Reps</label>
+          <input type="number" name="reps" min="1" placeholder="12" class="min-h-[44px] text-base" <?= $last_set && $last_set['reps'] ? 'value="'.$last_set['reps'].'"' : '' ?>>
+        </div>
+        <div>
+          <label class="text-[10px]">kg</label>
+          <input type="number" name="weight_kg" step="0.5" min="0" placeholder="<?= $suggest_weight ?: '20' ?>" class="min-h-[44px] text-base" <?= $suggest_weight ? 'value="'.$suggest_weight.'"' : '' ?>>
+        </div>
+        <div>
+          <label class="text-[10px]">Rest (sec)</label>
+          <input type="number" name="duration_sec" min="0" value="30" placeholder="30" class="min-h-[44px] text-base">
+        </div>
       </div>
-      <div>
-        <label class="text-[10px]">Reps</label>
-        <input type="number" name="reps" min="1" placeholder="12" class="min-h-[44px] text-base" <?= $last_set && $last_set['reps'] ? 'value="'.$last_set['reps'].'"' : '' ?>>
-      </div>
-      <div>
-        <label class="text-[10px]">kg</label>
-        <input type="number" name="weight_kg" step="0.5" min="0" placeholder="<?= $suggest_weight ?: '20' ?>" class="min-h-[44px] text-base" <?= $suggest_weight ? 'value="'.$suggest_weight.'"' : '' ?>>
-      </div>
-      <div>
-        <label class="text-[10px]">Rest (sec)</label>
-        <input type="number" name="duration_sec" min="0" value="30" placeholder="30" class="min-h-[44px] text-base">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-[10px] text-muted font-semibold uppercase">Side:</span>
+        <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="both" <?= $default_side==='both'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Both</label>
+        <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="left" <?= $default_side==='left'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Left</label>
+        <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="right" <?= $default_side==='right'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Right</label>
       </div>
     </div>
-    <div class="flex items-center gap-3 mb-2">
-      <span class="text-[10px] text-muted font-semibold uppercase">Side:</span>
-      <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="both" <?= $default_side==='both'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Both</label>
-      <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="left" <?= $default_side==='left'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Left</label>
-      <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="right" <?= $default_side==='right'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Right</label>
-    </div>
-    <?php endif; ?>
 
     <!-- Difficulty pills -->
     <div class="flex items-center gap-2 mb-3">
