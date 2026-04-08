@@ -176,29 +176,31 @@ render_head('Plans', 'plans');
 <?php endif; ?>
 
 <!-- ── Create / Clone ─────────────────────────────────────────────────────── -->
-<div class="grid-2" style="margin-top:1.5rem">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
 
   <!-- New plan — choose type -->
-  <div class="card">
-    <div class="card-title">Create New Plan</div>
+  <div class="bg-surface border border-border-app rounded-app p-5" x-data="{ mode: '<?= openai_api_key_configured() ? 'choose' : 'form' ?>' }">
+    <div class="text-[11px] font-bold uppercase tracking-wider text-muted mb-4">Create New Plan</div>
 
     <?php if (openai_api_key_configured()): ?>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Choose how to start your new plan:</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
-      <button type="button" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal" onclick="document.getElementById('blank-form').style.display='block';">
-        <span style="font-size:20px;display:block;margin-bottom:4px">&#128221;</span>
-        <span style="font-weight:700;display:block">Blank Plan</span>
-        <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Start from scratch</span>
-      </button>
-      <a href="ai_builder.php" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal;text-decoration:none">
-        <span style="font-size:20px;display:block;margin-bottom:4px">&#129302;</span>
-        <span style="font-weight:700;display:block">AI Generated</span>
-        <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Answer questions, get a plan</span>
-      </a>
+    <div x-show="mode === 'choose'">
+      <p class="text-[13px] text-muted mb-4 leading-relaxed">Choose how to start your new plan:</p>
+      <div class="grid grid-cols-2 gap-2.5 mb-5">
+        <button type="button" class="btn btn-ghost flex flex-col items-center justify-center p-3.5 h-auto whitespace-normal text-center" x-on:click="mode = 'form'">
+          <span class="text-xl block mb-1">&#128221;</span>
+          <span class="font-bold block">Blank Plan</span>
+          <span class="text-xs text-muted block mt-0.5">Start from scratch</span>
+        </button>
+        <a href="ai_builder.php" class="btn btn-ghost flex flex-col items-center justify-center p-3.5 h-auto whitespace-normal text-center no-underline">
+          <span class="text-xl block mb-1">&#129302;</span>
+          <span class="font-bold block">AI Generated</span>
+          <span class="text-xs text-muted block mt-0.5">Answer questions, get a plan</span>
+        </a>
+      </div>
     </div>
     <?php endif; ?>
 
-    <div id="blank-form" <?= openai_api_key_configured() ? 'style="display:none"' : '' ?>>
+    <div x-show="mode === 'form'" x-transition>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="create">
@@ -238,10 +240,10 @@ render_head('Plans', 'plans');
   </div>
 
   <!-- Clone existing plan -->
-  <div class="card">
-    <div class="card-title">Clone from Existing Plan</div>
+  <div class="bg-surface border border-border-app rounded-app p-5">
+    <div class="text-[11px] font-bold uppercase tracking-wider text-muted mb-4">Clone from Existing Plan</div>
     <?php if ($plans): ?>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Copies all days and exercises from the source plan. Then customise in the builder — add, remove or swap exercises without touching your historical data.</p>
+    <p class="text-[13px] text-muted mb-4 leading-relaxed">Copies all days and exercises from the source plan. Then customise in the builder — add, remove or swap exercises without touching your historical data.</p>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="clone">
@@ -269,16 +271,16 @@ render_head('Plans', 'plans');
         <label>Description (optional)</label>
         <textarea name="description" rows="2" placeholder="What's different this phase?"></textarea>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm">Clone &amp; Open Builder →</button>
+      <button type="submit" class="btn btn-primary btn-sm">Clone &amp; Open Builder &rarr;</button>
     </form>
     <?php else: ?>
-    <div class="empty"><p>Create your first plan to enable cloning.</p></div>
+    <div class="text-center py-10 text-muted text-sm">Create your first plan to enable cloning.</div>
     <?php endif; ?>
   </div>
 </div>
 
-<div class="info-box" style="margin-top:1rem">
-  <strong style="color:var(--text)">How it works:</strong>
+<div class="mt-4 px-3.5 py-3 bg-bg3 border-l-[3px] border-l-accent rounded-r-lg text-[13px] text-muted leading-relaxed">
+  <strong class="text-[var(--text)]">How it works:</strong>
   When you activate a new plan, all future sessions are logged under it. Old sessions remain permanently linked to the plan they were logged under — nothing is ever deleted.
   You can view history filtered by plan on the dashboard and exercise detail pages.
 </div>
