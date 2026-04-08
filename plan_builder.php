@@ -161,14 +161,17 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
       <?= $plan['is_active'] ? ' · <span class="text-accent-text font-semibold">ACTIVE</span>' : '' ?>
     </div>
   </div>
-  <?php if (!$plan['is_active']): ?>
-  <form method="post" action="plan_manager.php">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="activate">
-    <input type="hidden" name="plan_id" value="<?= $plan_id ?>">
-    <button class="btn btn-primary btn-sm">▶ Activate This Plan</button>
-  </form>
-  <?php endif; ?>
+  <div class="flex gap-2">
+    <button type="button" class="btn btn-ghost btn-sm" x-data="{ copied: false }" x-on:click="navigator.clipboard.writeText('<?= get_share_url($db, $plan_id) ?>'); copied = true; setTimeout(() => copied = false, 2000)" x-text="copied ? '✓ Copied!' : '🔗 Share'">🔗 Share</button>
+    <?php if (!$plan['is_active']): ?>
+    <form method="post" action="plan_manager.php">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="activate">
+      <input type="hidden" name="plan_id" value="<?= $plan_id ?>">
+      <button class="btn btn-primary btn-sm">▶ Activate This Plan</button>
+    </form>
+    <?php endif; ?>
+  </div>
 </div>
 
 <!-- Day tabs -->

@@ -137,6 +137,13 @@ function run_migrations(PDO $db): void {
         }
     } catch (Exception $e) {}
 
+    // ── Plan sharing token ────────────────────────────────────────────
+    try {
+        $pcols = $db->query("SHOW COLUMNS FROM plans")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('share_token', $pcols))
+            $db->exec("ALTER TABLE plans ADD COLUMN share_token VARCHAR(32) DEFAULT NULL");
+    } catch (Exception $e) {}
+
     // ── Rename "Hip Mobility" section to "Mobility" ─────────────────
     try {
         $db->exec("UPDATE plan_exercises SET section='Mobility' WHERE section='Hip Mobility'");

@@ -175,6 +175,7 @@ render_head('Plans', 'plans');
     <div class="flex flex-col gap-1.5 items-end">
       <a href="workout.php<?= $active_today_day ? '?day=' . urlencode($active_today_day) : '' ?>" class="btn btn-primary btn-sm">💪 Start Workout</a>
       <a href="plan_builder.php?plan_id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏️ Edit Plan</a>
+      <button type="button" class="btn btn-ghost btn-sm" x-data="{ copied: false }" x-on:click="navigator.clipboard.writeText('<?= get_share_url($db, $p['id']) ?>'); copied = true; setTimeout(() => copied = false, 2000)" x-text="copied ? '✓ Copied!' : '🔗 Share'">🔗 Share</button>
     </div>
   </div>
 </div>
@@ -206,6 +207,7 @@ render_head('Plans', 'plans');
         <input type="hidden" name="plan_id" value="<?= $p['id'] ?>">
         <button class="btn btn-primary btn-sm">▶ Activate</button>
       </form>
+      <button type="button" class="btn btn-ghost btn-sm" x-data="{ copied: false }" x-on:click="navigator.clipboard.writeText('<?= get_share_url($db, $p['id']) ?>'); copied = true; setTimeout(() => copied = false, 2000)" x-text="copied ? '✓ Copied!' : '🔗 Share'">🔗 Share</button>
       <?php if (!$p['session_count']): ?>
       <form method="post" class="inline" x-data x-on:submit="if (!confirm('Delete this plan?')) $event.preventDefault()">
         <?= csrf_field() ?>

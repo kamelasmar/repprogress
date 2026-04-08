@@ -139,6 +139,19 @@ function viewed_user(): ?array {
     return $vu;
 }
 
+// ── Plan Sharing ─────────────────────────────────────────────────────────────
+function get_share_url(PDO $db, int $plan_id): string {
+    $st = $db->prepare("SELECT share_token FROM plans WHERE id=?");
+    $st->execute([$plan_id]);
+    $token = $st->fetchColumn();
+    if (!$token) {
+        $token = bin2hex(random_bytes(16));
+        $db->prepare("UPDATE plans SET share_token=? WHERE id=?")->execute([$token, $plan_id]);
+    }
+    $base = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
+    return $base . '/share.php?token=' . $token;
+}
+
 // ── Vite Asset Loading ───────────────────────────────────────────────────────
 function vite_assets(): string {
     $dev = defined('VITE_DEV') && VITE_DEV;
