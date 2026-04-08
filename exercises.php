@@ -131,7 +131,7 @@ $stmt = $db->prepare("
 $stmt->execute([$uid, $uid, $uid, ...$params]);
 $exercises = $stmt->fetchAll();
 
-$muscle_groups = $db->query("SELECT DISTINCT muscle_group FROM exercises WHERE status='approved' ORDER BY muscle_group")->fetchAll(PDO::FETCH_COLUMN);
+$muscle_groups = ['Chest','Back','Shoulders','Biceps','Triceps','Core','Quads','Hamstrings','Glutes','Calves','Hips','Full Body','Cardio','Mobility'];
 $cardio_label = ['steady_state'=>'Steady State','hiit'=>'HIIT','none'=>''];
 
 // Pending suggestions (admin view)
@@ -158,22 +158,20 @@ render_head('Exercise Library', 'exercises');
 ?>
 
 <div class="page-header">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div class="flex items-start justify-between flex-wrap gap-3">
     <div>
       <div class="page-title">Exercise Library</div>
-      <div class="page-sub"><strong style="color:var(--accent)"><?= count($exercises) ?></strong> exercises available</div>
+      <div class="page-sub"><strong class="text-accent-text"><?= count($exercises) ?></strong> exercises available</div>
     </div>
-    <a href="exercises.php?add=1"
-       class="btn btn-primary">+ <?= $adm ? 'Add Exercise' : 'Suggest Exercise' ?></a>
+    <a href="exercises.php?add=1" class="btn btn-primary">+ <?= $adm ? 'Add Exercise' : 'Suggest Exercise' ?></a>
   </div>
 </div>
 
 <?php if ($adm && count($pending) > 0): ?>
-<!-- Admin: Pending suggestions banner -->
-<a href="exercises.php?tab=pending" class="card" style="display:block;margin-bottom:1.25rem;border-color:var(--warn);text-decoration:none">
-  <div style="display:flex;align-items:center;gap:8px">
+<a href="exercises.php?tab=pending" class="card block mb-5 border-warn no-underline">
+  <div class="flex items-center gap-2">
     <span class="badge badge-pending">Pending</span>
-    <span style="font-size:14px;font-weight:600"><?= count($pending) ?> exercise suggestion<?= count($pending)>1?'s':'' ?> awaiting review</span>
+    <span class="text-sm font-semibold"><?= count($pending) ?> exercise suggestion<?= count($pending)>1?'s':'' ?> awaiting review</span>
   </div>
 </a>
 <?php endif; ?>
@@ -250,7 +248,12 @@ render_head('Exercise Library', 'exercises');
       </div>
       <div class="form-group">
         <label>Muscle Group <span style="color:var(--red)">*</span></label>
-        <input type="text" name="muscle_group" placeholder="e.g. Hips" list="mg-list" required>
+        <select name="muscle_group" required>
+          <option value="">— select —</option>
+          <?php foreach ($muscle_groups as $mg): ?>
+          <option value="<?= $mg ?>"><?= $mg ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
     </div>
 
@@ -277,19 +280,17 @@ render_head('Exercise Library', 'exercises');
 
     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:1rem">
       <?php foreach ([
-        ['is_left_priority','Left priority'],
-        ['both_sides','Both sides'],
         ['is_mobility','Mobility'],
         ['is_core','Core'],
         ['is_functional','Functional'],
       ] as [$field,$label]): ?>
-      <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:400;color:var(--text);cursor:pointer;text-transform:none;letter-spacing:0;margin:0">
-        <input type="checkbox" name="<?= $field ?>" value="1" style="width:auto"> <?= $label ?>
+      <label class="flex items-center gap-2 text-sm font-normal text-[var(--text)] cursor-pointer" style="text-transform:none;letter-spacing:0;margin:0">
+        <input type="checkbox" name="<?= $field ?>" value="1" style="width:auto;-webkit-appearance:checkbox;appearance:checkbox"> <?= $label ?>
       </label>
       <?php endforeach; ?>
     </div>
 
-    <div style="display:flex;gap:10px">
+    <div class="flex gap-2.5">
       <button type="submit" class="btn btn-primary"><?= $adm ? 'Save Exercise' : 'Submit Suggestion' ?></button>
       <a href="exercises.php" class="btn btn-ghost">Cancel</a>
     </div>
@@ -297,36 +298,33 @@ render_head('Exercise Library', 'exercises');
 </div>
 <?php endif; ?>
 
-<!-- ── TYPE FILTERS ──────────────────────────────────────────────────────────── -->
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
-  <span style="font-size:12px;color:var(--muted)">Filter:</span>
-  <?php foreach ([''=>'All','left'=>'Left Priority','core'=>'Core','mobility'=>'Mobility','functional'=>'Functional','cardio'=>'Cardio'] as $val=>$lbl): ?>
-  <a href="exercises.php?type=<?= $val ?>"
-     style="font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);text-decoration:none;
-            background:<?= $filter_type===$val&&($val||!$filter_mg)?'var(--accent)':'transparent' ?>;
-            color:<?= $filter_type===$val&&($val||!$filter_mg)?'#fff':'var(--muted)' ?>"><?= $lbl ?></a>
+<!-- ── FILTERS: muscle group pills + search ──────────────────────────────────── -->
+<div x-data="{ search: '<?= htmlspecialchars($filter_mg) ? '' : '' ?>' }">
+<div class="flex gap-1.5 flex-wrap mb-3">
+  <a href="exercises.php" class="btn btn-sm <?= !$filter_mg && !$filter_type ? 'btn-primary' : 'btn-ghost' ?>">All</a>
+  <?php foreach ($muscle_groups as $mg): ?>
+  <a href="exercises.php?mg=<?= urlencode($mg) ?>" class="btn btn-sm <?= $filter_mg === $mg ? 'btn-primary' : 'btn-ghost' ?>"><?= $mg ?></a>
   <?php endforeach; ?>
-  <?php if ($filter_mg): ?>
-  <span style="font-size:12px;padding:3px 10px;border-radius:20px;background:var(--accent);color:#fff">
-    <?= htmlspecialchars($filter_mg) ?> <a href="exercises.php" style="color:#fff;margin-left:4px">&times;</a>
-  </span>
-  <?php endif; ?>
+</div>
+
+<!-- Type sub-filters -->
+<div class="flex gap-1.5 flex-wrap mb-3">
+  <span class="text-[11px] text-muted font-semibold uppercase leading-relaxed py-1">Type:</span>
+  <?php foreach ([''=>'All','core'=>'Core','mobility'=>'Mobility','functional'=>'Functional','cardio'=>'Cardio'] as $val=>$lbl): ?>
+  <a href="exercises.php?type=<?= $val ?><?= $filter_mg ? '&mg='.urlencode($filter_mg) : '' ?>" class="btn btn-sm <?= $filter_type === $val && ($val || !$filter_type) ? 'btn-primary' : 'btn-ghost' ?>"><?= $lbl ?></a>
+  <?php endforeach; ?>
+</div>
 </div>
 
 <!-- ── EXERCISE LIST ─────────────────────────────────────────────────────────── -->
 <?php if (!$exercises): ?>
-<div class="card"><div class="empty"><div class="empty-icon">&#128203;</div><p>No exercises match these filters.</p></div></div>
+<div class="card"><div class="empty"><div class="empty-icon">📋</div><p>No exercises match these filters.</p></div></div>
 <?php endif; ?>
 
 <?php foreach ($by_group as $group => $exs): ?>
-<div class="card" style="margin-bottom:1.25rem">
-
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:14px;font-weight:600;color:var(--text)"><?= htmlspecialchars($group) ?></span>
-      <span style="font-size:13px;color:var(--muted)"><?= count($exs) ?> exercises</span>
-    </div>
-    <a href="exercises.php?mg=<?= urlencode($group) ?>" class="btn btn-ghost btn-sm">Filter</a>
+<div class="mb-2">
+  <div class="section-hdr flex items-center justify-between">
+    <span><?= htmlspecialchars($group) ?> <span class="font-normal text-muted">(<?= count($exs) ?>)</span></span>
   </div>
 
   <?php foreach ($exs as $e):
@@ -335,53 +333,44 @@ render_head('Exercise Library', 'exercises');
     $is_own_pending = ($e['status'] === 'pending' && $e['created_by'] == $uid);
     $is_suggested_approved = ($e['is_suggested'] && $e['status'] === 'approved');
   ?>
-  <div id="<?= $eid ?>" style="padding:12px 0;border-bottom:1px solid var(--border)">
+  <div id="<?= $eid ?>" class="py-2.5 border-b border-border-app">
 
     <!-- Summary row -->
-    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
+    <div class="grid grid-cols-[1fr_auto] gap-3 items-start">
       <div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-          <span style="font-weight:600;font-size:14px;color:var(--text)"><?= htmlspecialchars($e['name']) ?></span>
+        <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+          <a href="exercise_detail.php?id=<?= $e['id'] ?>" class="font-semibold text-sm text-[var(--text)] hover:text-accent-text"><?= htmlspecialchars($e['name']) ?></a>
           <?php if ($is_own_pending): ?><span class="badge badge-pending">Pending</span><?php endif; ?>
           <?php if ($adm && $is_suggested_approved): ?><span class="badge badge-suggested">Suggested</span><?php endif; ?>
-          <?php if ($e['is_left_priority']): ?><span class="badge badge-left">Left</span><?php endif; ?>
           <?php if ($e['is_mobility']): ?><span class="badge badge-mob">Mobility</span><?php endif; ?>
           <?php if ($e['is_core']): ?><span class="badge badge-act">Core</span><?php endif; ?>
           <?php if ($e['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
           <?php if ($e['cardio_type']==='hiit'): ?><span class="badge badge-hiit">HIIT</span><?php endif; ?>
           <?php if ($e['cardio_type']==='steady_state'): ?><span class="badge badge-ss">Steady State</span><?php endif; ?>
-          <?php if ($e['both_sides']): ?><span class="badge" style="background:var(--bg3);color:var(--muted);border:1px solid var(--border)">Both sides</span><?php endif; ?>
         </div>
         <?php if ($e['coach_tip']): ?>
-        <div style="font-size:12px;color:var(--muted);font-style:italic;line-height:1.5;margin-bottom:5px"><?= htmlspecialchars($e['coach_tip']) ?></div>
+        <div class="coach-tip mb-1"><?= htmlspecialchars($e['coach_tip']) ?></div>
         <?php endif; ?>
-        <div style="display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap">
-          <?php if ($e['max_weight']): ?><span>Best: <strong style="color:var(--text)"><?= number_format($e['max_weight'],1) ?> kg</strong></span><?php endif; ?>
-          <?php if ($e['total_sets']): ?><span><?= $e['total_sets'] ?> sets logged</span><?php endif; ?>
-          <?php if ($e['last_done']): ?><span>Last: <?= date('M j',strtotime($e['last_done'])) ?></span>
-          <?php elseif ($e['status'] === 'approved'): ?><span style="color:var(--warn-text)">Never logged</span><?php endif; ?>
-          <?php if ($e['youtube_url']): ?>
-          <a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt" style="font-size:11px;padding:2px 8px">&#9654; Watch</a>
-          <?php endif; ?>
+        <div class="flex gap-3 text-xs text-muted flex-wrap">
+          <?php if ($e['max_weight']): ?><span>Best: <strong class="text-[var(--text)]"><?= number_format($e['max_weight'],1) ?> kg</strong></span><?php endif; ?>
+          <?php if ($e['total_sets']): ?><span><?= $e['total_sets'] ?> sets</span><?php endif; ?>
+          <?php if ($e['last_done']): ?><span>Last: <?= date('M j',strtotime($e['last_done'])) ?></span><?php endif; ?>
         </div>
       </div>
-      <!-- Action buttons (admin only) -->
-      <?php if ($adm): ?>
-      <div style="display:flex;gap:5px;align-items:flex-start;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+      <div class="flex gap-1 items-center flex-shrink-0">
+        <?php if ($e['youtube_url']): ?>
+        <a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt" style="font-size:11px;padding:2px 7px">▶</a>
+        <?php endif; ?>
+        <?php if ($adm): ?>
         <button onclick="toggleEdit('<?= $fid ?>')" class="btn btn-ghost btn-sm" type="button">Edit</button>
-        <a href="exercise_detail.php?id=<?= $e['id'] ?>" class="btn btn-ghost btn-sm">History</a>
-        <form method="post" onsubmit="return confirm('Remove this exercise?')" style="display:inline">
+        <form method="post" class="inline" x-data x-on:submit="if (!confirm('Remove this exercise?')) $event.preventDefault()">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="delete_exercise">
           <input type="hidden" name="id" value="<?= $e['id'] ?>">
-          <button type="submit" class="btn btn-danger btn-sm">&times;</button>
+          <button type="submit" class="btn btn-danger btn-sm">×</button>
         </form>
+        <?php endif; ?>
       </div>
-      <?php else: ?>
-      <div style="flex-shrink:0">
-        <a href="exercise_detail.php?id=<?= $e['id'] ?>" class="btn btn-ghost btn-sm">History</a>
-      </div>
-      <?php endif; ?>
     </div>
 
     <?php if ($adm): ?>
@@ -407,7 +396,11 @@ render_head('Exercise Library', 'exercises');
           </div>
           <div class="form-group">
             <label>Muscle Group</label>
-            <input type="text" name="muscle_group" value="<?= htmlspecialchars($e['muscle_group']) ?>" list="mg-list" required>
+            <select name="muscle_group" required>
+              <?php foreach ($muscle_groups as $mg): ?>
+              <option value="<?= $mg ?>" <?= $e['muscle_group'] === $mg ? 'selected' : '' ?>><?= $mg ?></option>
+              <?php endforeach; ?>
+            </select>
           </div>
         </div>
 
@@ -428,14 +421,12 @@ render_head('Exercise Library', 'exercises');
 
         <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:1rem">
           <?php foreach ([
-            ['is_left_priority','Left priority'],
-            ['both_sides','Both sides'],
             ['is_mobility','Mobility'],
             ['is_core','Core'],
             ['is_functional','Functional'],
           ] as [$field,$label]): ?>
-          <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:400;color:var(--text);cursor:pointer;text-transform:none;letter-spacing:0;margin:0">
-            <input type="checkbox" name="<?= $field ?>" value="1" style="width:auto"
+          <label class="flex items-center gap-2 text-[13px] font-normal text-[var(--text)] cursor-pointer" style="text-transform:none;letter-spacing:0;margin:0">
+            <input type="checkbox" name="<?= $field ?>" value="1" style="width:auto;-webkit-appearance:checkbox;appearance:checkbox"
               <?= ($e[$field]??0)?'checked':'' ?>> <?= $label ?>
           </label>
           <?php endforeach; ?>
@@ -453,6 +444,7 @@ render_head('Exercise Library', 'exercises');
 
 </div>
 <?php endforeach; ?>
+
 <?php endif; /* end tab check */ ?>
 
 <!-- Shared datalists -->
