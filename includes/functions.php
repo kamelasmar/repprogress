@@ -155,7 +155,7 @@ function vite_assets(): string {
     $entry = $manifest['src/js/app.js'] ?? null;
     if (!$entry) return '';
 
-    $base = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
+    $base = defined('APP_URL') ? rtrim(parse_url(APP_URL, PHP_URL_PATH) ?: '', '/') : '';
     $html = '';
     foreach (($entry['css'] ?? []) as $css) {
         $html .= '<link rel="stylesheet" href="' . $base . '/dist/' . $css . '">';
