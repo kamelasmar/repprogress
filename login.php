@@ -44,8 +44,8 @@ render_head('Sign In | Repprogress', '', true);
 <div class="auth-box">
   <div class="text-center mb-8">
     <div class="text-2xl font-bold -tracking-0.3">Rep<span class="text-accent-text">progress</span></div>
-    <div class="text-[var(--text)] text-sm font-medium mt-2">Workout tracker for trainers and individuals</div>
-    <div class="text-muted text-xs mt-1.5 leading-relaxed">Build training plans, log every set, and track progress.<br>Trainers can create plans and share them with clients.</div>
+    <div class="text-[var(--text)] text-sm font-medium mt-2">Track your workouts. See your progress.</div>
+    <div class="text-muted text-xs mt-1.5 leading-relaxed">Build training plans, log every set, and track your results.<br>Trainer? Manage and track your clients' progress too.</div>
   </div>
 
   <?php if ($error): ?>
