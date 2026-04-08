@@ -399,6 +399,9 @@ window.__secOrders = <?= json_encode($section_orders) ?>;
             </template>
             <div x-show="filtered.length === 0" class="px-3 py-4 text-center text-xs text-muted">No exercises found</div>
           </div>
+          <div class="mt-2 text-center">
+            <a href="exercises.php" target="_blank" class="text-xs text-accent-text hover:underline">Can't find it? Add a new exercise →</a>
+          </div>
         </div>
       </div>
 
