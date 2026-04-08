@@ -281,8 +281,82 @@ render_head('Plans', 'plans');
   <!-- AI Generated tab -->
   <?php if (openai_api_key_configured()): ?>
   <div x-show="tab === 'ai'" x-transition x-cloak>
-    <p class="text-[13px] text-muted mb-4 leading-relaxed">Answer a few questions about your goals, experience, and equipment — AI will generate a complete training plan for you to customise.</p>
-    <a href="ai_builder.php" class="btn btn-primary btn-sm">Open AI Builder &rarr;</a>
+    <p class="text-[13px] text-muted mb-4 leading-relaxed">Answer a few questions and AI will generate a starting plan for you to customise.</p>
+    <form method="post" action="ai_builder.php" id="ai-form">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="generate">
+      <div class="form-group">
+        <label>Plan Name</label>
+        <input type="text" name="plan_name" placeholder="e.g. AI Hypertrophy Phase 1" required>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label>Goal</label>
+          <select name="goal">
+            <?php foreach (['strength'=>'Strength','hypertrophy'=>'Hypertrophy','mobility'=>'Mobility','general_fitness'=>'General Fitness'] as $v=>$l): ?>
+            <option value="<?= $v ?>"><?= $l ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Experience Level</label>
+          <select name="experience">
+            <?php foreach (['beginner'=>'Beginner','intermediate'=>'Intermediate','advanced'=>'Advanced'] as $v=>$l): ?>
+            <option value="<?= $v ?>" <?= $v === 'intermediate' ? 'selected' : '' ?>><?= $l ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>Days per Week</label>
+          <select name="days_per_week">
+            <?php for ($d = 1; $d <= 7; $d++): ?>
+            <option value="<?= $d ?>" <?= $d === 3 ? 'selected' : '' ?>><?= $d ?> day<?= $d > 1 ? 's' : '' ?></option>
+            <?php endfor; ?>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Equipment</label>
+          <select name="equipment">
+            <?php foreach (['full_gym'=>'Full Gym','home_gym'=>'Home Gym','minimal'=>'Minimal / Bodyweight'] as $v=>$l): ?>
+            <option value="<?= $v ?>"><?= $l ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Session Duration</label>
+          <select name="duration">
+            <?php foreach (['30'=>'30 min','45'=>'45 min','60'=>'60 min','90'=>'90 min'] as $v=>$l): ?>
+            <option value="<?= $v ?>" <?= $v === '60' ? 'selected' : '' ?>><?= $l ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Focus Areas</label>
+        <div class="flex flex-wrap gap-2 mt-1">
+          <?php foreach (['Upper Body','Lower Body','Core','Full Body','Mobility'] as $fo): ?>
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:400;color:var(--text);cursor:pointer;padding:6px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
+            <input type="checkbox" name="focus_areas[]" value="<?= $fo ?>" style="width:auto;accent-color:var(--accent);-webkit-appearance:checkbox;appearance:checkbox">
+            <?= $fo ?>
+          </label>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Additional Details <span style="font-weight:400;color:var(--muted2)">(optional)</span></label>
+        <textarea name="details" rows="3" maxlength="500" placeholder="e.g. Bad left knee, prefer dumbbells over barbells, want extra hip mobility work..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="ai-submit-btn">Generate Plan &rarr;</button>
+    </form>
+    <script>
+    document.getElementById('ai-form').addEventListener('submit', function() {
+        var btn = document.getElementById('ai-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Generating your plan...';
+    });
+    </script>
   </div>
   <?php endif; ?>
 
