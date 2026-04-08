@@ -107,6 +107,11 @@ else: ?>
     <a href="account.php" class="nav-link">
       <span class="nav-icon">&#9881;</span>Account
     </a>
+    <?php if ($cu['is_admin']): ?>
+    <a href="admin.php" class="nav-link">
+      <span class="nav-icon">&#128272;</span>Admin
+    </a>
+    <?php endif; ?>
     <a href="logout.php" class="nav-link" style="color:var(--red-text)">
       <span class="nav-icon">&#128682;</span>Logout
     </a>
