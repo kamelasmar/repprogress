@@ -96,6 +96,29 @@ $st->execute([$uid, $uid]);
 $plans = $st->fetchAll();
 $all_plans = $plans;
 
+// ── Active plan extras (last session + today's workout day) ─────────────────
+$active_last_session = null;
+$active_today_day = null;
+$active_plan = null;
+foreach ($plans as $p) {
+    if ($p['is_active']) {
+        $active_plan = $p;
+        // Last session date
+        $ls = $db->prepare("SELECT MAX(session_date) FROM sessions WHERE plan_id=? AND user_id=?");
+        $ls->execute([$p['id'], $uid]);
+        $last_date = $ls->fetchColumn();
+        if ($last_date) {
+            $diff = (int)((strtotime('today') - strtotime($last_date)) / 86400);
+            $active_last_session = $diff === 0 ? 'Today' : ($diff === 1 ? 'Yesterday' : $diff . ' days ago');
+        }
+        // Today's scheduled day
+        $td = $db->prepare("SELECT day_label FROM plan_days WHERE plan_id=? AND week_day=?");
+        $td->execute([$p['id'], date('D')]);
+        $active_today_day = $td->fetchColumn() ?: null;
+        break;
+    }
+}
+
 render_head('Plans', 'plans');
 ?>
 
@@ -112,16 +135,13 @@ render_head('Plans', 'plans');
     ? min(100, round(((time()-strtotime($p['start_date']))/604800) / $p['weeks_duration'] * 100))
     : 0;
 ?>
-<div class="card mb-4 <?= $p['is_active'] ? 'border-2 border-accent' : '' ?>">
+<?php if ($p['is_active']): ?>
+<div class="card mb-4 border-2 border-accent" style="box-shadow:0 0 0 1px var(--accent),0 0 12px var(--accent-dim);padding:1.5rem">
   <div class="flex justify-between items-start flex-wrap gap-3">
     <div class="flex-1">
       <div class="flex items-center gap-2.5 flex-wrap mb-1">
         <span class="text-[17px] font-bold text-[var(--text)]"><?= htmlspecialchars($p['name']) ?></span>
-        <?php if ($p['is_active']): ?>
         <span class="bg-accent text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">● ACTIVE</span>
-        <?php else: ?>
-        <span class="bg-bg text-muted text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-border-app">Inactive</span>
-        <?php endif; ?>
         <span class="text-xs text-muted">Phase <?= $p['phase_number'] ?> · <?= $p['weeks_duration'] ?> weeks</span>
       </div>
       <?php if ($p['description']): ?>
@@ -133,29 +153,60 @@ render_head('Plans', 'plans');
         <span>📊 Week <?= $week_num ?> of <?= $p['weeks_duration'] ?><?= is_numeric($weeks_left) ? " · $weeks_left weeks left" : '' ?></span>
         <?php endif; ?>
         <span>🏋️ <?= $p['session_count'] ?> sessions logged</span>
+        <?php if ($active_last_session): ?>
+        <span>🕐 Last session: <?= $active_last_session ?></span>
+        <?php elseif ($p['session_count'] == 0): ?>
+        <span>🕐 No sessions yet</span>
+        <?php endif; ?>
       </div>
 
-      <?php if ($p['is_active'] && $p['weeks_duration']): ?>
-      <div class="mt-2.5">
-        <div class="h-1.5 bg-border-app rounded-sm overflow-hidden">
-          <div class="h-full bg-accent rounded-sm transition-all duration-300" style="width:<?= $progress_pct ?>%"></div>
+      <?php if ($p['weeks_duration']): ?>
+      <div class="mt-3">
+        <div class="flex items-center gap-3">
+          <div class="flex-1 h-2 bg-border-app rounded-full overflow-hidden">
+            <div class="h-full bg-accent rounded-full transition-all duration-300" style="width:<?= $progress_pct ?>%"></div>
+          </div>
+          <span class="text-xs text-muted font-semibold"><?= $progress_pct ?>%</span>
         </div>
-        <div class="text-[11px] text-muted mt-1"><?= $progress_pct ?>% through this plan</div>
       </div>
       <?php endif; ?>
     </div>
 
     <div class="flex flex-col gap-1.5 items-end">
+      <a href="workout.php<?= $active_today_day ? '?day=' . urlencode($active_today_day) : '' ?>" class="btn btn-primary btn-sm">💪 Start Workout</a>
       <a href="plan_builder.php?plan_id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏️ Edit Plan</a>
-      <?php if (!$p['is_active']): ?>
+    </div>
+  </div>
+</div>
+<?php else: ?>
+<div class="card mb-4">
+  <div class="flex justify-between items-start flex-wrap gap-3">
+    <div class="flex-1">
+      <div class="flex items-center gap-2.5 flex-wrap mb-1">
+        <span class="text-[17px] font-bold text-[var(--text)]"><?= htmlspecialchars($p['name']) ?></span>
+        <span class="bg-bg text-muted text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-border-app">Inactive</span>
+        <span class="text-xs text-muted">Phase <?= $p['phase_number'] ?> · <?= $p['weeks_duration'] ?> weeks</span>
+      </div>
+      <?php if ($p['description']): ?>
+      <div class="text-[13px] text-muted mb-2 leading-relaxed"><?= htmlspecialchars($p['description']) ?></div>
+      <?php endif; ?>
+      <div class="flex gap-4 text-xs text-muted flex-wrap">
+        <?php if ($p['start_date']): ?>
+        <span>📅 <?= date('M j, Y', strtotime($p['start_date'])) ?> → <?= $p['end_date'] ? date('M j, Y',strtotime($p['end_date'])) : '?' ?></span>
+        <?php endif; ?>
+        <span>🏋️ <?= $p['session_count'] ?> sessions logged</span>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5 items-end">
+      <a href="plan_builder.php?plan_id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏️ Edit Plan</a>
       <form method="post" class="inline">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="activate">
         <input type="hidden" name="plan_id" value="<?= $p['id'] ?>">
         <button class="btn btn-primary btn-sm">▶ Activate</button>
       </form>
-      <?php endif; ?>
-      <?php if (!$p['is_active'] && !$p['session_count']): ?>
+      <?php if (!$p['session_count']): ?>
       <form method="post" class="inline" x-data x-on:submit="if (!confirm('Delete this plan?')) $event.preventDefault()">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="delete">
@@ -166,38 +217,30 @@ render_head('Plans', 'plans');
     </div>
   </div>
 </div>
+<?php endif; ?>
 <?php endforeach; ?>
 
 <?php if (!$plans): ?>
 <div class="card"><div class="empty"><div class="empty-icon">🗂️</div><p>No plans yet. Create your first one below.</p></div></div>
 <?php endif; ?>
 
-<!-- ── Create / Clone ─────────────────────────────────────────────────────── -->
-<div class="grid-2 mt-6">
+<!-- ── Create New Plan (tabbed) ────────────────────────────────────────────── -->
+<div class="card mt-6" x-data="{ tab: 'blank' }">
+  <div class="card-title">Create New Plan</div>
 
-  <!-- New plan — choose type -->
-  <div class="card" x-data="{ mode: '<?= openai_api_key_configured() ? 'choose' : 'form' ?>' }">
-    <div class="card-title">Create New Plan</div>
-
+  <!-- Tab bar -->
+  <div class="flex gap-2 mb-5 flex-wrap">
+    <button type="button" class="btn btn-sm" x-on:click="tab = 'blank'" :class="tab === 'blank' ? 'btn-primary' : 'btn-ghost'">📝 Blank Plan</button>
     <?php if (openai_api_key_configured()): ?>
-    <div x-show="mode === 'choose'">
-      <p class="text-[13px] text-muted mb-4 leading-relaxed">Choose how to start your new plan:</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
-        <button type="button" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal" x-on:click="mode = 'form'">
-          <span style="font-size:20px;display:block;margin-bottom:4px">&#128221;</span>
-          <span style="font-weight:700;display:block">Blank Plan</span>
-          <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Start from scratch</span>
-        </button>
-        <a href="ai_builder.php" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal;text-decoration:none">
-          <span style="font-size:20px;display:block;margin-bottom:4px">&#129302;</span>
-          <span style="font-weight:700;display:block">AI Generated</span>
-          <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Answer questions, get a plan</span>
-        </a>
-      </div>
-    </div>
+    <button type="button" class="btn btn-sm" x-on:click="tab = 'ai'" :class="tab === 'ai' ? 'btn-primary' : 'btn-ghost'">🤖 AI Generated</button>
     <?php endif; ?>
+    <?php if ($plans): ?>
+    <button type="button" class="btn btn-sm" x-on:click="tab = 'clone'" :class="tab === 'clone' ? 'btn-primary' : 'btn-ghost'">📋 Clone Existing</button>
+    <?php endif; ?>
+  </div>
 
-    <div x-show="mode === 'form'" x-transition x-cloak>
+  <!-- Blank Plan tab -->
+  <div x-show="tab === 'blank'" x-transition>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="create">
@@ -233,13 +276,19 @@ render_head('Plans', 'plans');
       </div>
       <button type="submit" class="btn btn-primary btn-sm">Create &amp; Open Builder &rarr;</button>
     </form>
-    </div>
   </div>
 
-  <!-- Clone existing plan -->
-  <div class="card">
-    <div class="card-title">Clone from Existing Plan</div>
-    <?php if ($plans): ?>
+  <!-- AI Generated tab -->
+  <?php if (openai_api_key_configured()): ?>
+  <div x-show="tab === 'ai'" x-transition x-cloak>
+    <p class="text-[13px] text-muted mb-4 leading-relaxed">Answer a few questions about your goals, experience, and equipment — AI will generate a complete training plan for you to customise.</p>
+    <a href="ai_builder.php" class="btn btn-primary btn-sm">Open AI Builder &rarr;</a>
+  </div>
+  <?php endif; ?>
+
+  <!-- Clone Existing tab -->
+  <?php if ($plans): ?>
+  <div x-show="tab === 'clone'" x-transition x-cloak>
     <p class="text-[13px] text-muted mb-4 leading-relaxed">Copies all days and exercises from the source plan. Then customise in the builder — add, remove or swap exercises without touching your historical data.</p>
     <form method="post">
       <?= csrf_field() ?>
@@ -268,18 +317,21 @@ render_head('Plans', 'plans');
         <label>Description (optional)</label>
         <textarea name="description" rows="2" placeholder="What's different this phase?"></textarea>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm">Clone &amp; Open Builder →</button>
+      <button type="submit" class="btn btn-primary btn-sm">Clone &amp; Open Builder &rarr;</button>
     </form>
-    <?php else: ?>
-    <div class="empty"><p>Create your first plan to enable cloning.</p></div>
-    <?php endif; ?>
   </div>
+  <?php endif; ?>
 </div>
 
-<div class="info-box mt-4">
-  <strong class="text-[var(--text)]">How it works:</strong>
-  When you activate a new plan, all future sessions are logged under it. Old sessions remain permanently linked to the plan they were logged under — nothing is ever deleted.
-  You can view history filtered by plan on the dashboard and exercise detail pages.
+<div class="info-box mt-4" x-data="{ show: !localStorage.getItem('rp_plans_tip_dismissed') }" x-show="show" x-transition>
+  <div class="flex justify-between items-start gap-3">
+    <div>
+      <strong class="text-[var(--text)]">How it works:</strong>
+      When you activate a new plan, all future sessions are logged under it. Old sessions remain permanently linked to the plan they were logged under — nothing is ever deleted.
+      You can view history filtered by plan on the dashboard and exercise detail pages.
+    </div>
+    <button type="button" class="text-muted hover:text-[var(--text)] text-lg leading-none cursor-pointer" style="background:none;border:none;padding:0;font-size:18px" x-on:click="localStorage.setItem('rp_plans_tip_dismissed','1'); show = false">&times;</button>
+  </div>
 </div>
 
 <?php render_foot(); ?>
