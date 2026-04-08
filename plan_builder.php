@@ -127,8 +127,35 @@ $sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation
 render_head('Plan Builder — '.$plan['name'], 'plans');
 ?>
 <script>
-window._exerciseData = <?= json_encode(array_values($all_ex)) ?>;
-window._sectionOrders = <?= json_encode($section_orders) ?>;
+document.addEventListener('alpine:init', () => {
+  Alpine.data('picker', () => ({
+    exercises: <?= json_encode(array_values($all_ex)) ?>,
+    categories: [],
+    category: '',
+    search: '',
+    selectedId: '',
+    selectedName: '',
+    section: 'Main Work',
+    sectionOrder: 6,
+    sectionOrders: <?= json_encode($section_orders) ?>,
+    filtered: [],
+    init() {
+      this.categories = [...new Set(this.exercises.map(e => e.muscle_group))].sort();
+      this.updateFiltered();
+      this.$watch('category', () => this.updateFiltered());
+      this.$watch('search', () => this.updateFiltered());
+    },
+    updateFiltered() {
+      this.filtered = this.exercises.filter(e => {
+        const matchCat = !this.category || e.muscle_group === this.category;
+        const matchSearch = !this.search || e.name.toLowerCase().includes(this.search.toLowerCase());
+        return matchCat && matchSearch;
+      });
+    },
+    selectExercise(ex) { this.selectedId = String(ex.id); this.selectedName = ex.name; },
+    clearSelection() { this.selectedId = ''; this.selectedName = ''; this.search = ''; }
+  }));
+});
 </script>
 
 <div class="flex items-center gap-3 mb-5 flex-wrap">
@@ -315,31 +342,7 @@ window._sectionOrders = <?= json_encode($section_orders) ?>;
 
 <!-- Right: add exercise panel -->
 <div>
-  <div class="card sticky top-4" x-data="{
-    exercises: [],
-    categories: [],
-    category: '',
-    search: '',
-    selectedId: '',
-    selectedName: '',
-    section: 'Main Work',
-    sectionOrder: 6,
-    sectionOrders: {},
-    init() {
-      this.exercises = window._exerciseData || [];
-      this.categories = [...new Set(this.exercises.map(e => e.muscle_group))].sort();
-      this.sectionOrders = window._sectionOrders || {};
-    },
-    get filteredExercises() {
-      return this.exercises.filter(e => {
-        const matchCat = !this.category || e.muscle_group === this.category;
-        const matchSearch = !this.search || e.name.toLowerCase().includes(this.search.toLowerCase());
-        return matchCat && matchSearch;
-      });
-    },
-    selectExercise(ex) { this.selectedId = ex.id; this.selectedName = ex.name; },
-    clearSelection() { this.selectedId = ''; this.selectedName = ''; this.search = ''; }
-  }">
+  <div class="card sticky top-4" x-data="picker">
     <div class="card-title">Add Exercise</div>
     <form method="post" x-ref="addForm">
       <?= csrf_field() ?>
@@ -362,9 +365,6 @@ window._sectionOrders = <?= json_encode($section_orders) ?>;
 
         <!-- Picker (shown when no selection) -->
         <div x-show="!selectedId">
-          <!-- Search -->
-          <input type="text" x-model="search" placeholder="Search exercises..." class="mb-2">
-
           <!-- Category pills -->
           <div class="flex gap-1.5 flex-wrap mb-3">
             <button type="button" class="btn btn-sm" :class="category === '' ? 'btn-primary' : 'btn-ghost'" x-on:click="category = ''">All</button>
@@ -373,9 +373,12 @@ window._sectionOrders = <?= json_encode($section_orders) ?>;
             </template>
           </div>
 
+          <!-- Search -->
+          <input type="text" x-model="search" placeholder="Search exercises..." class="mb-2">
+
           <!-- Exercise list -->
           <div class="max-h-64 overflow-y-auto border border-border-app rounded-app">
-            <template x-for="ex in filteredExercises" :key="ex.id">
+            <template x-for="ex in filtered" :key="ex.id">
               <div class="px-3 py-2 border-b border-border-app cursor-pointer hover:bg-bg3 transition-colors" x-on:click="selectExercise(ex)">
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex-1 min-w-0">
@@ -394,7 +397,7 @@ window._sectionOrders = <?= json_encode($section_orders) ?>;
                 </div>
               </div>
             </template>
-            <div x-show="filteredExercises.length === 0" class="px-3 py-4 text-center text-xs text-muted">No exercises found</div>
+            <div x-show="filtered.length === 0" class="px-3 py-4 text-center text-xs text-muted">No exercises found</div>
           </div>
         </div>
       </div>
