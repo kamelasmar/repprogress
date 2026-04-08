@@ -10,7 +10,7 @@ $colors = day_colors();
 $today = date('Y-m-d');
 
 if (!$ap) {
-    render_head('Today's Workout — Log Sets & Track Progress','workout', false, 'Log your workout sets, track weights and reps, and monitor your progress in real time.');
+    render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Log your workout sets, track weights and reps, and monitor your progress in real time.');
     echo '<div class="card"><div class="empty"><p>No active plan. Create and activate a plan first.</p><a href="plan_manager.php" class="btn btn-primary btn-sm">Go to Plans</a></div></div>';
     render_foot();
     exit;
@@ -167,7 +167,7 @@ foreach ($exercises as $e) $by_section[$e['section']][] = $e;
 
 $pn = (int)preg_replace('/\D/', '', $active_day);
 
-render_head('Today's Workout — Log Sets & Track Progress','workout', false, 'Log your workout sets, track weights and reps, and monitor your progress in real time.');
+render_head('Todays Workout — Log Sets & Track Progress','workout', false, 'Log your workout sets, track weights and reps, and monitor your progress in real time.');
 ?>
 
 <div class="page-header">
