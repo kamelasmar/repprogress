@@ -205,7 +205,7 @@ function run_migrations(PDO $db): void {
                     ($p1,'Day 2','Push',2,'Wed','hiit','Ski Erg HIIT — 20s hard / 40s easy × 6 rounds'),
                     ($p1,'Day 3','Pull',3,'Fri','steady_state','Rowing Machine 10 min — Zone 2, lat primer'),
                     ($p1,'Day 4','Arms & Functional',4,'Sat','hiit','Ski Erg HIIT — 20s hard / 40s easy × 8 rounds'),
-                    ($p1,'Day 5','Full Body + Mobility',5,'Mon','steady_state','Stationary Bike 15 min — Zone 2, easy recovery')
+                    ($p1,'Day 5','Full Body + Mobility',5,'Sun','steady_state','Stationary Bike 15 min — Zone 2, easy recovery')
                 ");
 
                 // Helper to insert plan exercise by name
