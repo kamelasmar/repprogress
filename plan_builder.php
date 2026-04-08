@@ -390,9 +390,9 @@ window.__secOrders = <?= json_encode($section_orders) ?>;
                       <span class="badge badge-ss" x-show="ex.cardio_type === 'steady_state'" style="font-size:10px;padding:1px 5px">Steady</span>
                     </div>
                   </div>
-                  <div class="flex gap-2 items-center flex-shrink-0">
+                  <div class="flex gap-1.5 items-center flex-shrink-0">
                     <a x-show="ex.youtube_url" :href="ex.youtube_url" target="_blank" class="btn-yt" style="font-size:11px;padding:2px 7px" x-on:click.stop>▶</a>
-                    <span class="text-accent-text text-xs font-semibold">Select</span>
+                    <span class="btn btn-primary btn-sm" style="padding:2px 10px;font-size:11px">+ Add</span>
                   </div>
                 </div>
               </div>
