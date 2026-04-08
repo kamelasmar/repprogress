@@ -57,18 +57,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: log.php?session_id=".$sess_id); exit;
     }
     if ($action === 'update_set') {
+        $set_id = (int)($_POST['set_id'] ?? 0);
         $db->prepare("UPDATE sets_log SET reps=?, weight_kg=?, side=?, difficulty=?, duration_sec=? WHERE id=? AND user_id=?")
-           ->execute([$_POST['reps'] ?: null, $_POST['weight_kg'] ?: null, $_POST['side'] ?: 'both', $_POST['difficulty'] ?: null, $_POST['duration_sec'] ?: null, $_POST['set_id'], $uid]);
+           ->execute([$_POST['reps'] ?: null, $_POST['weight_kg'] ?: null, $_POST['side'] ?: 'both', $_POST['difficulty'] ?: null, $_POST['duration_sec'] ?: null, $set_id, $uid]);
         flash('Set updated.');
         header("Location: log.php?session_id=".$_POST['session_id']); exit;
     }
     if ($action === 'delete_set') {
-        $db->prepare("DELETE FROM sets_log WHERE id=? AND user_id=?")->execute([$_POST['set_id'], $uid]);
+        $set_id = (int)($_POST['set_id'] ?? 0);
+        $db->prepare("DELETE FROM sets_log WHERE id=? AND user_id=?")->execute([$set_id, $uid]);
         flash('Set removed.');
         header("Location: log.php?session_id=".$_POST['session_id']); exit;
     }
     if ($action === 'delete_session') {
-        $db->prepare("DELETE FROM sessions WHERE id=? AND user_id=?")->execute([$_POST['session_id'], $uid]);
+        $sess_id = (int)($_POST['session_id'] ?? 0);
+        $db->prepare("DELETE FROM sessions WHERE id=? AND user_id=?")->execute([$sess_id, $uid]);
         flash('Session deleted.');
         header("Location: log.php"); exit;
     }

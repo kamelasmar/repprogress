@@ -17,6 +17,8 @@ if (!$plan) { header("Location: plan_manager.php"); exit; }
 // ── POST handlers ────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
+    // Re-verify plan ownership (defense in depth)
+    if (!$plan) { header("Location: plan_manager.php"); exit; }
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_exercise') {
@@ -49,17 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'update_exercise') {
+        $pe_id = (int)($_POST['pe_id'] ?? 0);
         $db->prepare("UPDATE plan_exercises SET sets_target=?,reps_target=?,sets_left=?,reps_left_bonus=?,is_left_priority=?,both_sides=?,section=?,notes=? WHERE id=? AND plan_id=?")
            ->execute([$_POST['sets_target'],$_POST['reps_target'],(int)$_POST['sets_left'],
              (int)$_POST['reps_left_bonus'],isset($_POST['is_left_priority'])?1:0,
              isset($_POST['both_sides'])?1:0,$_POST['section'],$_POST['notes']??null,
-             $_POST['pe_id'],$plan_id]);
+             $pe_id,$plan_id]);
         flash('Exercise updated.');
         header("Location: plan_builder.php?plan_id=$plan_id&day=".$_POST['day_label']); exit;
     }
 
     if ($action === 'remove_exercise') {
-        $db->prepare("DELETE FROM plan_exercises WHERE id=? AND plan_id=?")->execute([$_POST['pe_id'],$plan_id]);
+        $pe_id = (int)($_POST['pe_id'] ?? 0);
+        $db->prepare("DELETE FROM plan_exercises WHERE id=? AND plan_id=?")->execute([$pe_id,$plan_id]);
         flash('Exercise removed from plan.');
         header("Location: plan_builder.php?plan_id=$plan_id&day=".$_POST['day_label']); exit;
     }

@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Activate a plan
     if ($action === 'activate') {
         $db->prepare("UPDATE plans SET is_active=0 WHERE user_id=?")->execute([$uid]);
-        $db->prepare("UPDATE plans SET is_active=1 WHERE id=? AND user_id=?")->execute([$_POST['plan_id'], $uid]);
+        $db->prepare("UPDATE plans SET is_active=1 WHERE id=? AND user_id=?")->execute([(int)$_POST['plan_id'], $uid]);
         flash('Plan activated. New sessions will be logged under this plan.');
         header("Location: plan_manager.php"); exit;
     }
