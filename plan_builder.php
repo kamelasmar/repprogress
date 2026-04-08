@@ -136,6 +136,7 @@ $all_ex = $all_ex_st->fetchAll();
 $ex_by_mg = [];
 foreach ($all_ex as $e) $ex_by_mg[$e['muscle_group']][] = $e;
 
+$muscle_groups = ['Chest','Back','Shoulders','Biceps','Triceps','Core','Quads','Hamstrings','Glutes','Calves','Hips','Full Body','Cardio','Mobility'];
 $sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation','Main Work','Functional','Finisher','Core Block B','Cool-Down','Reset'];
 $section_orders = ['Cardio Warm-Up'=>1,'Mobility'=>2,'Stretching'=>3,'Core Block A'=>4,'Activation'=>5,'Main Work'=>6,'Functional'=>7,'Finisher'=>8,'Core Block B'=>9,'Cool-Down'=>10,'Reset'=>11];
 // Day pill numbers derived dynamically from label
@@ -145,6 +146,7 @@ render_head('Plan Builder — '.$plan['name'], 'plans');
 <script>
 window.__exData = <?= json_encode(array_values($all_ex)) ?>;
 window.__secOrders = <?= json_encode($section_orders) ?>;
+window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
 </script>
 
 <div class="flex items-center gap-3 mb-5 flex-wrap">
@@ -340,7 +342,7 @@ window.__secOrders = <?= json_encode($section_orders) ?>;
     sectionOrders: window.__secOrders || {},
     filtered: [],
     init() {
-      this.categories = [...new Set(this.exercises.map(e => e.muscle_group))].sort();
+      this.categories = window.__muscleGroups || [];
       this.doFilter();
       this.$watch('category', () => this.doFilter());
       this.$watch('search', () => this.doFilter());
