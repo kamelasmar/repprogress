@@ -333,7 +333,6 @@ render_head('Workout', 'workout');
     <input type="hidden" name="session_id" value="<?= $session_id ?>">
     <input type="hidden" name="exercise_id" value="<?= $ex_id ?>">
     <input type="hidden" name="day" value="<?= htmlspecialchars($active_day) ?>">
-    <input type="hidden" name="duration_sec" value="">
     <input type="hidden" name="notes" value="">
     <input type="hidden" name="difficulty" x-model="difficulty">
 
@@ -351,13 +350,15 @@ render_head('Workout', 'workout');
         <input type="number" name="weight_kg" step="0.5" min="0" placeholder="<?= $suggest_weight ?: '20' ?>" class="min-h-[44px] text-base" <?= $suggest_weight ? 'value="'.$suggest_weight.'"' : '' ?>>
       </div>
       <div>
-        <label class="text-[10px]">Side</label>
-        <select name="side" class="min-h-[44px] text-base">
-          <option value="both" <?= $default_side==='both'?'selected':'' ?>>Both</option>
-          <option value="left" <?= $default_side==='left'?'selected':'' ?>>Left</option>
-          <option value="right" <?= $default_side==='right'?'selected':'' ?>>Right</option>
-        </select>
+        <label class="text-[10px]">Rest (sec)</label>
+        <input type="number" name="duration_sec" min="0" value="30" placeholder="30" class="min-h-[44px] text-base">
       </div>
+    </div>
+    <div class="flex items-center gap-3 mb-2">
+      <span class="text-[10px] text-muted font-semibold uppercase">Side:</span>
+      <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="both" <?= $default_side==='both'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Both</label>
+      <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="left" <?= $default_side==='left'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Left</label>
+      <label class="text-xs flex items-center gap-1 cursor-pointer"><input type="radio" name="side" value="right" <?= $default_side==='right'?'checked':'' ?> style="width:auto;-webkit-appearance:radio;appearance:radio"> Right</label>
     </div>
 
     <!-- Difficulty pills -->
