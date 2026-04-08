@@ -139,6 +139,31 @@ function viewed_user(): ?array {
     return $vu;
 }
 
+// ── Vite Asset Loading ───────────────────────────────────────────────────────
+function vite_assets(): string {
+    $dev = defined('VITE_DEV') && VITE_DEV;
+
+    if ($dev) {
+        return '<script type="module" src="http://localhost:5173/@vite/client"></script>'
+             . '<script type="module" src="http://localhost:5173/src/js/app.js"></script>';
+    }
+
+    $manifest_path = __DIR__ . '/../dist/.vite/manifest.json';
+    if (!file_exists($manifest_path)) return '';
+
+    $manifest = json_decode(file_get_contents($manifest_path), true);
+    $entry = $manifest['src/js/app.js'] ?? null;
+    if (!$entry) return '';
+
+    $html = '';
+    foreach (($entry['css'] ?? []) as $css) {
+        $html .= '<link rel="stylesheet" href="/dist/' . $css . '">';
+    }
+    $html .= '<script type="module" src="/dist/' . $entry['file'] . '"></script>';
+
+    return $html;
+}
+
 // ── AI Workout Builder ───────────────────────────────────────────────────────
 function openai_api_key_configured(): bool {
     return defined('OPENAI_API_KEY') && OPENAI_API_KEY !== '';

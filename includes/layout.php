@@ -19,6 +19,7 @@ function render_head(string $title, string $active = '', bool $auth_page = false
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="description" content="Track every rep. Own every side. See the progress.">
 <title><?= htmlspecialchars($title) ?> — Repprogress</title>
+<?= vite_assets() ?>
 <?php if (!$auth_page): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <?php endif; ?>
