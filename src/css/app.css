@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* ── Theme variables — matches existing layout.php dark theme ── */
+:root {
+  --bg:           #0f0f0f;
+  --bg2:          #1a1a1a;
+  --bg3:          #222;
+  --surface:      #1a1a1a;
+  --surface2:     #222;
+  --border:       rgba(255,255,255,0.08);
+  --border2:      rgba(255,255,255,0.14);
+  --text:         #f0f0f0;
+  --muted:        #888;
+  --muted2:       #666;
+  --accent:       #1D9E75;
+  --accent-dim:   rgba(29,158,117,0.15);
+  --accent-dark:  #178a65;
+  --accent-text:  #4dd8a7;
+  --left:         #5b9fd6;
+  --left-dim:     rgba(55,138,221,0.15);
+  --left-text:    #7ec1f7;
+  --warn:         #d4924a;
+  --warn-dim:     rgba(186,117,23,0.15);
+  --warn-text:    #f5b76a;
+  --red:          #e05c5c;
+  --red-dim:      rgba(226,75,74,0.15);
+  --red-text:     #f08080;
+  --green-dim:    rgba(99,153,34,0.15);
+  --green-text:   #8dcc4a;
+  --radius:       10px;
+  --radius-lg:    14px;
+  --sidebar-w:    220px;
+  --nav-h:        60px;
+}
+
+/* ── Tailwind theme tokens mapped to CSS variables ── */
+@theme {
+  --color-bg:          var(--bg);
+  --color-bg2:         var(--bg2);
+  --color-bg3:         var(--bg3);
+  --color-surface:     var(--surface);
+  --color-surface2:    var(--surface2);
+  --color-accent:      var(--accent);
+  --color-accent-dim:  var(--accent-dim);
+  --color-accent-dark: var(--accent-dark);
+  --color-accent-text: var(--accent-text);
+  --color-muted:       var(--muted);
+  --color-muted2:      var(--muted2);
+  --color-left:        var(--left);
+  --color-left-dim:    var(--left-dim);
+  --color-left-text:   var(--left-text);
+  --color-warn:        var(--warn);
+  --color-warn-dim:    var(--warn-dim);
+  --color-warn-text:   var(--warn-text);
+  --color-red:         var(--red);
+  --color-red-dim:     var(--red-dim);
+  --color-red-text:    var(--red-text);
+  --color-green-dim:   var(--green-dim);
+  --color-green-text:  var(--green-text);
+  --color-border-app:  var(--border);
+  --color-border-app2: var(--border2);
+}
