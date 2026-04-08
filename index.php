@@ -69,7 +69,7 @@ if($ap && $ap['start_date']){
 // Greeting name: prefer name, fall back to email prefix
 $greeting_name = $cu['name'] ?: explode('@', $cu['email'] ?? '')[0];
 
-render_head('Dashboard','index');
+render_head('Dashboard — Your Training Overview','index', false, 'View your training dashboard with workout stats, recent sessions, and progress tracking.');
 ?>
 
 <div class="page-header">

@@ -145,7 +145,7 @@ $sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation
 $section_orders = ['Cardio Warm-Up'=>1,'Mobility'=>2,'Stretching'=>3,'Core Block A'=>4,'Activation'=>5,'Main Work'=>6,'Functional'=>7,'Finisher'=>8,'Core Block B'=>9,'Cool-Down'=>10,'Reset'=>11];
 // Day pill numbers derived dynamically from label
 
-render_head('Plan Builder — '.$plan['name'], 'plans');
+render_head('Plan Builder — '.htmlspecialchars($plan['name']),'plans', false, 'Build and customise your training plan. Add exercises, set targets, and organise your workout days.');
 ?>
 <script>
 window.__exData = <?= json_encode(array_values($all_ex)) ?>;

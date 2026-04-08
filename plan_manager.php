@@ -119,7 +119,7 @@ foreach ($plans as $p) {
     }
 }
 
-render_head('Plans', 'plans');
+render_head('Training Plans — Create, Clone & Manage','plans', false, 'Create and manage your training plans. Build from scratch, clone existing plans, or generate with AI.');
 ?>
 
 <div class="page-header">

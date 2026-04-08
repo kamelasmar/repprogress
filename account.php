@@ -101,7 +101,7 @@ $shared_to_me = $db->prepare("SELECT sa.id, u.id AS user_id, u.name, u.email FRO
 $shared_to_me->execute([$uid]);
 $shared_to_me = $shared_to_me->fetchAll();
 
-render_head('Account Settings', 'account');
+render_head('Account Settings','account', false, 'Manage your account, profile, and shared access settings.');
 ?>
 
 <div class="page-header">

@@ -68,7 +68,7 @@ if ($ap) {
 
 $dow_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-render_head('Schedule', 'schedule');
+render_head('Training Schedule — Weekly Overview','schedule', false, 'View your weekly training schedule, assigned exercises per day, and 4-week training calendar.');
 ?>
 
 <div class="page-header">

@@ -134,7 +134,7 @@ $all_sessions = $st_sessions->fetchAll();
 
 $day_colors = $all_colors;
 
-render_head('Workout History','log');
+render_head('Workout History — Review Past Sessions','log', false, 'Review your workout history. See sets, reps, weights, and difficulty for every session.');
 ?>
 
 <div class="page-header">

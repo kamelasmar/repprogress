@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-render_head('Create Account', '', true);
+render_head('Create Your Repprogress Account', '', true);
 ?>
 
 <div class="auth-box">

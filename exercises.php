@@ -154,7 +154,7 @@ foreach ($exercises as $e) {
     $by_group[$e['muscle_group']][] = $e;
 }
 
-render_head('Exercise Library', 'exercises');
+render_head('Exercise Library — Browse & Add Exercises','exercises', false, 'Browse exercises by muscle group. View coach tips, watch videos, and track your history.');
 ?>
 
 <div class="page-header">

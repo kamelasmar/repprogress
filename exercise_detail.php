@@ -39,7 +39,7 @@ foreach ($sets as $s) {
     elseif ($s['side']==='right') $right_prog[$d] = max($right_prog[$d]??0,(float)$s['weight_kg']);
 }
 
-render_head($ex['name'], 'exercises');
+render_head(htmlspecialchars($ex['name']).' — Exercise Detail','exercises', false, 'View your progress, set history, and performance charts for '.htmlspecialchars($ex['name']).'.');
 ?>
 
 <div class="mb-4"><a href="exercises.php" class="text-muted text-sm">← Back to library</a></div>

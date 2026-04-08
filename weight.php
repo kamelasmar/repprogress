@@ -66,7 +66,7 @@ $comp_labels  = json_encode(array_column($comp_entries, 'logged_date'));
 $comp_fat     = json_encode(array_map(fn($r) => $r['body_fat_pct'] ? (float)$r['body_fat_pct'] : null, array_values($comp_entries)));
 $comp_muscle  = json_encode(array_map(fn($r) => $r['muscle_mass_pct'] ? (float)$r['muscle_mass_pct'] : null, array_values($comp_entries)));
 
-render_head('Body Composition', 'weight');
+render_head('Body Composition — Track Weight & Progress','weight', false, 'Track your body weight, body fat, and muscle mass over time.');
 ?>
 
 <div class="page-header">

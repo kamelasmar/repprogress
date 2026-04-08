@@ -256,7 +256,7 @@ $form = $_SESSION['ai_form'] ?? ($_SESSION['ai_preview']['form'] ?? []);
 // Clear form session after reading
 if ($step === 'form') unset($_SESSION['ai_preview']);
 
-render_head('AI Workout Builder', 'plans');
+render_head('AI Workout Builder — Generate a Training Plan','plans', false, 'Answer a few questions and AI generates a personalised training plan for you to customise.');
 ?>
 
 <?php if ($step === 'form'): ?>
