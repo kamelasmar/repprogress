@@ -115,7 +115,7 @@ $day_config->execute([$plan_id, $active_day]);
 $day_config = $day_config->fetch();
 
 // All exercises for the add form (approved + user's own pending)
-$all_ex_st = $db->prepare("SELECT id, name, muscle_group, is_mobility, is_core, is_functional, cardio_type FROM exercises WHERE status='approved' OR created_by=? ORDER BY muscle_group, name");
+$all_ex_st = $db->prepare("SELECT id, name, muscle_group, is_mobility, is_core, is_functional, cardio_type, youtube_url FROM exercises WHERE status='approved' OR created_by=? ORDER BY muscle_group, name");
 $all_ex_st->execute([$uid]);
 $all_ex = $all_ex_st->fetchAll();
 $ex_by_mg = [];
@@ -305,6 +305,9 @@ window.__secOrders = <?= json_encode($section_orders) ?>;
     <div class="empty">
       <div class="empty-icon">💪</div>
       <p>This day is empty. Add exercises below to start building.</p>
+      <?php if (openai_api_key_configured()): ?>
+      <a href="ai_builder.php" class="btn btn-ghost btn-sm mt-2">Or generate a full plan with AI →</a>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
   </div>
@@ -387,7 +390,10 @@ window.__secOrders = <?= json_encode($section_orders) ?>;
                       <span class="badge badge-ss" x-show="ex.cardio_type === 'steady_state'" style="font-size:10px;padding:1px 5px">Steady</span>
                     </div>
                   </div>
-                  <span class="text-accent-text text-xs font-semibold flex-shrink-0">Select</span>
+                  <div class="flex gap-2 items-center flex-shrink-0">
+                    <a x-show="ex.youtube_url" :href="ex.youtube_url" target="_blank" class="btn-yt" style="font-size:11px;padding:2px 7px" x-on:click.stop>▶</a>
+                    <span class="text-accent-text text-xs font-semibold">Select</span>
+                  </div>
                 </div>
               </div>
             </template>
