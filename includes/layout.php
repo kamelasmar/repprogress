@@ -146,16 +146,46 @@ function render_foot(bool $auth_page = false): void {
 </main>
 </div>
 
-<?php if (!$auth_page): ?>
+<?php if (!$auth_page):
+  $main_nav = [
+      'index'    => ['Home',     'index.php',        '&#128202;'],
+      'workout'  => ['Workout',  'workout.php',      '&#128170;'],
+      'plans'    => ['Plans',    'plan_manager.php',  '&#128221;'],
+      'exercises'=> ['Exercises','exercises.php',     '&#127947;&#65039;'],
+  ];
+  $more_nav = [
+      'log'      => ['History',  'log.php',           '&#128203;'],
+      'weight'   => ['Body',     'weight.php',        '&#9878;&#65039;'],
+      'schedule' => ['Schedule', 'schedule.php',      '&#128197;'],
+      'account'  => ['Account',  'account.php',       '&#9881;'],
+  ];
+  $more_active = in_array($active, array_keys($more_nav));
+?>
 <!-- Mobile bottom nav -->
-<nav class="bottom-nav">
+<nav class="bottom-nav" x-data="{ moreOpen: false }">
+  <!-- More slide-up menu -->
+  <div x-show="moreOpen" x-transition.opacity x-on:click="moreOpen = false" class="fixed inset-0 bg-[rgba(0,0,0,0.5)] z-[99]" x-cloak></div>
+  <div x-show="moreOpen" x-transition x-cloak class="fixed bottom-[calc(var(--nav-h)+env(safe-area-inset-bottom))] left-0 right-0 bg-surface border-t border-border-app rounded-t-xl z-[101] px-4 py-4">
+    <div class="grid grid-cols-4 gap-2 text-center">
+      <?php foreach ($more_nav as $key => [$label, $href, $icon]): ?>
+      <a href="<?= $href ?>" class="flex flex-col items-center gap-1 py-2 rounded-app no-underline <?= $active===$key ? 'bg-accent-dim text-accent-text' : 'text-muted hover:text-[var(--text)]' ?>">
+        <span class="text-xl"><?= $icon ?></span>
+        <span class="text-[10px] font-semibold"><?= $label ?></span>
+      </a>
+      <?php endforeach; ?>
+    </div>
+  </div>
   <div class="bottom-nav-inner">
-    <?php foreach ($pages as $key => [$label, $href, $icon]): ?>
+    <?php foreach ($main_nav as $key => [$label, $href, $icon]): ?>
     <a href="<?= $href ?>" class="bnav-item <?= $active===$key?'active':'' ?>">
       <span class="bnav-icon"><?= $icon ?></span>
       <span><?= $label ?></span>
     </a>
     <?php endforeach; ?>
+    <button type="button" class="bnav-item <?= $more_active ? 'active' : '' ?>" x-on:click="moreOpen = !moreOpen" style="background:none;border:none;font-family:inherit;cursor:pointer">
+      <span class="bnav-icon">&#8943;</span>
+      <span>More</span>
+    </button>
   </div>
 </nav>
 
