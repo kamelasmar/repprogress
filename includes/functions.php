@@ -155,11 +155,12 @@ function vite_assets(): string {
     $entry = $manifest['src/js/app.js'] ?? null;
     if (!$entry) return '';
 
+    $base = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
     $html = '';
     foreach (($entry['css'] ?? []) as $css) {
-        $html .= '<link rel="stylesheet" href="/dist/' . $css . '">';
+        $html .= '<link rel="stylesheet" href="' . $base . '/dist/' . $css . '">';
     }
-    $html .= '<script type="module" src="/dist/' . $entry['file'] . '"></script>';
+    $html .= '<script type="module" src="' . $base . '/dist/' . $entry['file'] . '"></script>';
 
     return $html;
 }
