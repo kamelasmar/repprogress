@@ -343,6 +343,8 @@
     margin-bottom: 1rem; border: 1px solid rgba(91,159,214,0.25);
   }
   .coach-tip { font-size: 12px; color: var(--muted); line-height: 1.55; font-style: italic; margin-top: 3px; }
+  @keyframes highlight-fade { from { background: var(--accent-dim); } to { background: transparent; } }
+  .animate-highlight td { animation: highlight-fade 1.5s ease-out; }
   .info-box {
     padding: 12px 14px; background: var(--bg3);
     border-left: 3px solid var(--accent);

@@ -81,11 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $db->prepare("INSERT INTO sets_log (session_id, exercise_id, set_number, reps, weight_kg, duration_sec, side, notes, user_id) VALUES (?,?,?,?,?,?,?,?,?)")
+        $db->prepare("INSERT INTO sets_log (session_id, exercise_id, set_number, reps, weight_kg, duration_sec, side, notes, difficulty, user_id) VALUES (?,?,?,?,?,?,?,?,?,?)")
            ->execute([$session_id, $ex_id, $set_num,
                       $_POST['reps'] ?: null, $_POST['weight_kg'] ?: null,
                       $_POST['duration_sec'] ?: null, $_POST['side'] ?: 'both',
-                      $_POST['notes'] ?: null, $uid]);
+                      $_POST['notes'] ?: null, $_POST['difficulty'] ?: null, $uid]);
         flash('Set logged!');
         header("Location: workout.php?day=".urlencode($active_day)."#ex-".$_POST['exercise_id']); exit;
     }
@@ -128,6 +128,22 @@ if ($session_id) {
     }
 }
 
+// Get last session data per exercise (for weight suggestions)
+$last_session_data = [];
+$ls_st = $db->prepare("
+    SELECT sl.exercise_id, sl.weight_kg, sl.reps, sl.side, sl.difficulty
+    FROM sets_log sl
+    JOIN sessions s ON sl.session_id = s.id
+    WHERE sl.exercise_id = ? AND s.user_id = ? AND s.session_date < CURDATE()
+    ORDER BY s.session_date DESC, sl.set_number ASC
+    LIMIT 10
+");
+foreach ($exercises as $e) {
+    $ls_st->execute([$e['exercise_id'], $uid]);
+    $rows = $ls_st->fetchAll();
+    if ($rows) $last_session_data[$e['exercise_id']] = $rows;
+}
+
 // Calculate total target sets
 $total_target = 0;
 foreach ($exercises as $e) {
@@ -147,7 +163,7 @@ render_head('Workout', 'workout');
 ?>
 
 <div class="page-header">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+  <div class="flex justify-between items-start flex-wrap gap-3">
     <div>
       <div class="page-title">
         <?php if ($is_rest_day && !isset($_GET['day'])): ?>
@@ -163,27 +179,27 @@ render_head('Workout', 'workout');
         <?php endif; ?>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px">
+    <div class="flex items-center gap-3">
       <?php if ($session): ?>
       <span class="badge badge-admin">Session active</span>
       <?php endif; ?>
-      <span style="font-size:14px;font-weight:600;color:var(--accent-text)"><?= $total_logged ?>/<?= $total_target ?> sets</span>
+      <span class="text-sm font-semibold text-accent-text"><?= $total_logged ?>/<?= $total_target ?> sets</span>
     </div>
   </div>
 </div>
 
 <?php if ($is_rest_day && !isset($_GET['day'])): ?>
-<div class="card" style="margin-bottom:1.25rem;border-color:var(--accent)">
-  <div style="text-align:center;padding:1rem 0">
-    <div style="font-size:32px;margin-bottom:8px">&#128564;</div>
-    <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">No workout scheduled for today</div>
-    <div style="font-size:13px;color:var(--muted)">Pick a day below to train anyway, or enjoy your rest.</div>
+<div class="card mb-5 border-accent">
+  <div class="text-center py-4">
+    <div class="text-3xl mb-2">😴</div>
+    <div class="text-[15px] font-semibold text-[var(--text)] mb-1">No workout scheduled for today</div>
+    <div class="text-[13px] text-muted">Pick a day below to train anyway, or enjoy your rest.</div>
   </div>
 </div>
 <?php endif; ?>
 
 <!-- Day tabs -->
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem">
+<div class="flex gap-1.5 flex-wrap mb-5">
   <?php foreach ($plan_days as $pd):
     $dpn = (int)preg_replace('/\D/', '', $pd['day_label']);
     $isActive = $pd['day_label'] === $active_day;
@@ -197,11 +213,13 @@ render_head('Workout', 'workout');
 
 <?php if ($total_target > 0): ?>
 <!-- Progress bar -->
-<div style="margin-bottom:1.25rem">
-  <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
-    <div style="height:100%;width:<?= $total_target ? round($total_logged/$total_target*100) : 0 ?>%;background:var(--accent);border-radius:4px;transition:width 0.3s"></div>
+<div class="mb-5">
+  <div class="flex items-center gap-3">
+    <div class="flex-1 h-2 bg-bg3 rounded-full overflow-hidden">
+      <div class="h-full bg-accent rounded-full transition-all duration-300" style="width:<?= $total_target ? round($total_logged/$total_target*100) : 0 ?>%"></div>
+    </div>
+    <span class="text-xs text-muted font-semibold"><?= $total_target ? round($total_logged/$total_target*100) : 0 ?>%</span>
   </div>
-  <div style="font-size:11px;color:var(--muted);margin-top:4px"><?= $total_target ? round($total_logged/$total_target*100) : 0 ?>% complete</div>
 </div>
 <?php endif; ?>
 
@@ -218,55 +236,99 @@ render_head('Workout', 'workout');
     $ex_sets = $logged_sets[$ex_id] ?? [];
     $next_set = count($ex_sets) + 1;
     $col = $colors[$active_day] ?? '#888';
+    $last_data = $last_session_data[$ex_id] ?? [];
+    $last_set = $last_data[0] ?? null;
+
+    // Smart weight suggestion
+    $suggest_weight = '';
+    if ($last_set && $last_set['weight_kg']) {
+        $diff = $last_set['difficulty'] ?? null;
+        if ($diff === 'easy') $suggest_weight = round($last_set['weight_kg'] + 2.5, 1);
+        elseif ($diff === 'hard') $suggest_weight = $last_set['weight_kg'];
+        else $suggest_weight = $last_set['weight_kg'];
+    }
+
+    // Smart side default
+    $default_side = 'both';
+    if ($e['is_left_priority']) {
+        $last_logged_side = end($ex_sets);
+        if (!$last_logged_side) $default_side = 'left';
+        elseif ($last_logged_side['side'] === 'left') $default_side = 'right';
+        else $default_side = 'left';
+    }
 ?>
-<div id="ex-<?= $ex_id ?>" class="card" style="margin-bottom:10px;border-left:3px solid <?= $col ?>">
+<div id="ex-<?= $ex_id ?>" class="card mb-2.5" style="border-left:3px solid <?= $col ?>"
+     x-data="{ timer: 0, timerInterval: null, showTimer: false, restSec: 30, difficulty: '' }">
   <!-- Exercise header -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+  <div class="flex justify-between items-start gap-2 mb-2">
     <div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-        <span style="font-weight:700;font-size:15px;color:var(--text)"><?= htmlspecialchars($e['name']) ?></span>
-        <span style="font-size:12px;color:var(--muted)"><?= htmlspecialchars($e['muscle_group']) ?></span>
+      <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+        <span class="font-bold text-[15px] text-[var(--text)]"><?= htmlspecialchars($e['name']) ?></span>
+        <span class="text-xs text-muted"><?= htmlspecialchars($e['muscle_group']) ?></span>
         <?php if ($e['is_left_priority']): ?><span class="badge badge-left">Left+</span><?php endif; ?>
         <?php if ($e['is_core']): ?><span class="badge badge-core">Core</span><?php endif; ?>
         <?php if ($e['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
         <?php if ($e['ex_cardio']==='hiit'): ?><span class="badge badge-hiit">HIIT</span><?php endif; ?>
         <?php if ($e['ex_cardio']==='steady_state'): ?><span class="badge badge-ss">Steady</span><?php endif; ?>
       </div>
-      <div style="font-size:13px;color:var(--muted)">
-        <?= $e['sets_target'] ?> &times; <?= htmlspecialchars($e['reps_target']) ?>
+      <div class="text-[13px] text-muted">
+        <?= $e['sets_target'] ?> × <?= htmlspecialchars($e['reps_target']) ?>
         <?php if ($e['is_left_priority'] && ($e['sets_left'] || $e['reps_left_bonus'])): ?>
-        <span style="color:var(--left-text)"> &middot; Left: +<?= $e['sets_left'] ?> sets, +<?= $e['reps_left_bonus'] ?> reps</span>
+        <span class="text-left-text"> · Left: +<?= $e['sets_left'] ?> sets, +<?= $e['reps_left_bonus'] ?> reps</span>
         <?php endif; ?>
       </div>
+      <?php if ($last_data): ?>
+      <div class="text-[11px] text-muted2 mt-1">Last:
+        <?php foreach (array_slice($last_data, 0, 3) as $ls): ?>
+        <?= $ls['weight_kg'] ? $ls['weight_kg'].'kg' : '' ?><?= $ls['reps'] ? '×'.$ls['reps'] : '' ?><?= $ls['difficulty'] ? ' ('.$ls['difficulty'].')' : '' ?>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
     </div>
     <?php if ($e['youtube_url']): ?>
-    <a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt" style="flex-shrink:0">&#9654; Watch</a>
+    <a href="<?= htmlspecialchars($e['youtube_url']) ?>" target="_blank" class="btn-yt flex-shrink-0">▶ Watch</a>
     <?php endif; ?>
   </div>
 
   <?php if ($e['coach_tip']): ?>
-  <div class="coach-tip" style="margin-bottom:10px"><?= htmlspecialchars($e['coach_tip']) ?></div>
+  <div class="coach-tip mb-2.5"><?= htmlspecialchars($e['coach_tip']) ?></div>
   <?php endif; ?>
+
+  <!-- Rest timer -->
+  <div x-show="showTimer" x-transition class="bg-accent-dim border border-accent rounded-app px-4 py-3 mb-3 text-center" x-cloak>
+    <div class="text-2xl font-bold text-accent-text" x-text="'0:' + String(timer).padStart(2, '0')"></div>
+    <div class="flex justify-center gap-2 mt-2">
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=30; timer=30; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">30s</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=60; timer=60; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">60s</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=90; timer=90; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">90s</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=120; timer=120; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">120s</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="clearInterval(timerInterval); showTimer=false">Skip</button>
+    </div>
+  </div>
 
   <!-- Logged sets -->
   <?php if ($ex_sets): ?>
-  <table style="margin-bottom:10px">
-    <thead><tr><th>#</th><th>Side</th><th>Reps</th><th>Weight</th><th>Dur</th><th></th></tr></thead>
+  <table class="mb-2.5">
+    <thead><tr><th>#</th><th>Side</th><th>Reps</th><th>Weight</th><th>Feel</th><th></th></tr></thead>
     <tbody>
-    <?php foreach ($ex_sets as $s): ?>
-    <tr>
-      <td style="color:var(--muted)"><?= $s['set_number'] ?></td>
-      <td><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:<?= $s['side']==='left'?'var(--left-dim)':($s['side']==='right'?'var(--accent-dim)':'var(--bg3)') ?>;color:<?= $s['side']==='left'?'var(--left-text)':($s['side']==='right'?'var(--accent-text)':'var(--muted)') ?>"><?= $s['side'] ?></span></td>
-      <td><?= $s['reps'] ?: '&mdash;' ?></td>
-      <td><?= $s['weight_kg'] ? $s['weight_kg'].' kg' : '&mdash;' ?></td>
-      <td><?= $s['duration_sec'] ? $s['duration_sec'].'s' : '&mdash;' ?></td>
+    <?php foreach ($ex_sets as $i => $s): ?>
+    <tr <?= ($i === count($ex_sets) - 1 && isset($_GET['day'])) ? 'class="animate-highlight"' : '' ?>>
+      <td class="text-muted"><?= $s['set_number'] ?></td>
+      <td><span class="text-[11px] px-1.5 py-0.5 rounded <?= $s['side']==='left' ? 'bg-left-dim text-left-text' : ($s['side']==='right' ? 'bg-accent-dim text-accent-text' : 'bg-bg3 text-muted') ?>"><?= $s['side'] ?></span></td>
+      <td><?= $s['reps'] ?: '—' ?></td>
+      <td><?= $s['weight_kg'] ? $s['weight_kg'].' kg' : '—' ?></td>
       <td>
-        <form method="post" style="display:inline">
+        <?php if (!empty($s['difficulty'])): ?>
+        <span class="text-[11px] <?= $s['difficulty']==='easy' ? 'text-green-text' : ($s['difficulty']==='hard' ? 'text-red-text' : 'text-warn-text') ?>"><?= $s['difficulty']==='easy' ? '😊' : ($s['difficulty']==='hard' ? '😤' : '😐') ?></span>
+        <?php else: ?>—<?php endif; ?>
+      </td>
+      <td>
+        <form method="post" class="inline">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="delete_set">
           <input type="hidden" name="set_id" value="<?= $s['id'] ?>">
           <input type="hidden" name="day" value="<?= htmlspecialchars($active_day) ?>">
-          <button class="btn btn-danger btn-sm" style="padding:2px 6px">&times;</button>
+          <button class="btn btn-danger btn-sm" style="padding:2px 6px">×</button>
         </form>
       </td>
     </tr>
@@ -275,47 +337,68 @@ render_head('Workout', 'workout');
   </table>
   <?php endif; ?>
 
-  <!-- Inline add set form -->
-  <form method="post" onsubmit="this.querySelector('[type=submit]').disabled=true" style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap">
+  <!-- Add set form -->
+  <form method="post" x-on:submit="$el.querySelector('[type=submit]').disabled=true; setTimeout(() => { showTimer=true; timer=restSec; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000) }, 100)">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="log_set">
     <input type="hidden" name="submit_token" value="<?= bin2hex(random_bytes(16)) ?>">
     <input type="hidden" name="session_id" value="<?= $session_id ?>">
     <input type="hidden" name="exercise_id" value="<?= $ex_id ?>">
     <input type="hidden" name="day" value="<?= htmlspecialchars($active_day) ?>">
-    <div style="width:50px">
-      <label style="font-size:10px">#</label>
-      <input type="number" name="set_number" value="<?= $next_set ?>" min="1" required style="padding:7px 6px;font-size:13px">
-    </div>
-    <div style="width:65px">
-      <label style="font-size:10px">Reps</label>
-      <input type="number" name="reps" min="1" placeholder="12" style="padding:7px 6px;font-size:13px">
-    </div>
-    <div style="width:70px">
-      <label style="font-size:10px">kg</label>
-      <input type="number" name="weight_kg" step="0.5" min="0" placeholder="20" style="padding:7px 6px;font-size:13px">
-    </div>
-    <div style="width:55px">
-      <label style="font-size:10px">Sec</label>
-      <input type="number" name="duration_sec" min="1" placeholder="60" style="padding:7px 6px;font-size:13px">
-    </div>
-    <div style="width:75px">
-      <label style="font-size:10px">Side</label>
-      <select name="side" style="padding:7px 4px;font-size:13px">
-        <option value="both">Both</option>
-        <option value="left" <?= $e['is_left_priority']?'':'' ?>>Left</option>
-        <option value="right">Right</option>
-      </select>
-    </div>
+    <input type="hidden" name="duration_sec" value="">
     <input type="hidden" name="notes" value="">
-    <button type="submit" class="btn btn-primary btn-sm" style="padding:7px 12px;margin-bottom:0">+ Log</button>
+    <input type="hidden" name="difficulty" x-model="difficulty">
+
+    <div class="grid grid-cols-4 gap-2 mb-2">
+      <div>
+        <label class="text-[10px]">#</label>
+        <input type="number" name="set_number" value="<?= $next_set ?>" min="1" required class="min-h-[44px] text-base">
+      </div>
+      <div>
+        <label class="text-[10px]">Reps</label>
+        <input type="number" name="reps" min="1" placeholder="12" class="min-h-[44px] text-base" <?= $last_set && $last_set['reps'] ? 'value="'.$last_set['reps'].'"' : '' ?>>
+      </div>
+      <div>
+        <label class="text-[10px]">kg</label>
+        <input type="number" name="weight_kg" step="0.5" min="0" placeholder="<?= $suggest_weight ?: '20' ?>" class="min-h-[44px] text-base" <?= $suggest_weight ? 'value="'.$suggest_weight.'"' : '' ?>>
+      </div>
+      <div>
+        <label class="text-[10px]">Side</label>
+        <select name="side" class="min-h-[44px] text-base">
+          <option value="both" <?= $default_side==='both'?'selected':'' ?>>Both</option>
+          <option value="left" <?= $default_side==='left'?'selected':'' ?>>Left</option>
+          <option value="right" <?= $default_side==='right'?'selected':'' ?>>Right</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Difficulty pills -->
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-[10px] text-muted font-semibold uppercase">Feel:</span>
+      <button type="button" class="btn btn-sm" style="padding:3px 10px;font-size:12px" :class="difficulty === 'easy' ? 'bg-green-dim text-green-text border border-[rgba(99,153,34,0.4)]' : 'btn-ghost'" x-on:click="difficulty = difficulty === 'easy' ? '' : 'easy'">😊 Easy</button>
+      <button type="button" class="btn btn-sm" style="padding:3px 10px;font-size:12px" :class="difficulty === 'medium' ? 'bg-warn-dim text-warn-text border border-[rgba(186,117,23,0.4)]' : 'btn-ghost'" x-on:click="difficulty = difficulty === 'medium' ? '' : 'medium'">😐 Medium</button>
+      <button type="button" class="btn btn-sm" style="padding:3px 10px;font-size:12px" :class="difficulty === 'hard' ? 'bg-red-dim text-red-text border border-[rgba(224,92,92,0.4)]' : 'btn-ghost'" x-on:click="difficulty = difficulty === 'hard' ? '' : 'hard'">😤 Hard</button>
+    </div>
+
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm min-h-[44px]">+ Log Set</button>
+      <?php if ($ex_sets): ?>
+      <?php $last_ex_set = end($ex_sets); ?>
+      <button type="button" class="btn btn-ghost btn-sm min-h-[44px]" onclick="
+        this.closest('form').querySelector('[name=reps]').value='<?= $last_ex_set['reps'] ?>';
+        this.closest('form').querySelector('[name=weight_kg]').value='<?= $last_ex_set['weight_kg'] ?>';
+        this.closest('form').querySelector('[name=side]').value='<?= $default_side ?>';
+        this.closest('form').submit();
+      ">↻ Repeat</button>
+      <?php endif; ?>
+    </div>
   </form>
 </div>
 <?php endforeach; ?>
 <?php endforeach; ?>
 
 <?php if ($session): ?>
-<div style="margin-top:1.25rem;text-align:center">
+<div class="mt-5 text-center">
   <a href="log.php?session_id=<?= $session_id ?>" class="btn btn-ghost btn-sm">View full session in History &rarr;</a>
 </div>
 <?php endif; ?>

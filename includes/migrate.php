@@ -48,6 +48,8 @@ function run_migrations(PDO $db): void {
             $db->exec("ALTER TABLE sets_log ADD COLUMN side ENUM('left','right','both') DEFAULT 'both'");
         if (!in_array('notes', $lcols))
             $db->exec("ALTER TABLE sets_log ADD COLUMN notes TEXT DEFAULT NULL");
+        if (!in_array('difficulty', $lcols))
+            $db->exec("ALTER TABLE sets_log ADD COLUMN difficulty ENUM('easy','medium','hard') DEFAULT NULL");
     } catch (Exception $e) {}
 
     // ── users table ────────────────────────────────────────────────────
