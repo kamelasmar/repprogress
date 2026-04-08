@@ -265,7 +265,6 @@ render_head('Workout', 'workout');
       <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
         <span class="font-bold text-[15px] text-[var(--text)]"><?= htmlspecialchars($e['name']) ?></span>
         <span class="text-xs text-muted"><?= htmlspecialchars($e['muscle_group']) ?></span>
-        <?php if ($e['is_left_priority']): ?><span class="badge badge-left">Left+</span><?php endif; ?>
         <?php if ($e['is_core']): ?><span class="badge badge-core">Core</span><?php endif; ?>
         <?php if ($e['is_functional']): ?><span class="badge badge-func">Functional</span><?php endif; ?>
         <?php if ($e['ex_cardio']==='hiit'): ?><span class="badge badge-hiit">HIIT</span><?php endif; ?>
@@ -273,9 +272,6 @@ render_head('Workout', 'workout');
       </div>
       <div class="text-[13px] text-muted">
         <?= $e['sets_target'] ?> × <?= htmlspecialchars($e['reps_target']) ?>
-        <?php if ($e['is_left_priority'] && ($e['sets_left'] || $e['reps_left_bonus'])): ?>
-        <span class="text-left-text"> · Left: +<?= $e['sets_left'] ?> sets, +<?= $e['reps_left_bonus'] ?> reps</span>
-        <?php endif; ?>
       </div>
       <?php if ($last_data): ?>
       <div class="text-[11px] text-muted2 mt-1">Last:

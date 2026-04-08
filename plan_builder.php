@@ -249,7 +249,6 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
         <div class="flex items-center gap-2 flex-wrap mb-0.5">
           <span class="font-semibold text-sm"><?= htmlspecialchars($e['name']) ?></span>
           <span class="text-xs text-muted"><?= $e['muscle_group'] ?></span>
-          <?php if ($e['is_left_priority']): ?><span class="badge badge-left">Left+</span><?php endif; ?>
           <?php if ($e['both_sides']): ?><span class="badge bg-bg text-muted border border-border-app">Both sides</span><?php endif; ?>
           <?php if ($e['ex_cardio']==='hiit'): ?><span class="badge badge-hiit">HIIT</span><?php endif; ?>
           <?php if ($e['ex_cardio']==='steady_state'): ?><span class="badge badge-ss">Steady State</span><?php endif; ?>
@@ -258,9 +257,6 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
         </div>
         <div class="text-xs text-muted">
           <?= $e['sets_target'] ?> sets · <?= htmlspecialchars($e['reps_target']) ?>
-          <?php if ($e['is_left_priority'] && ($e['sets_left'] || $e['reps_left_bonus'])): ?>
-          <span class="text-left-text"> · Left: +<?= $e['sets_left'] ?> sets, +<?= $e['reps_left_bonus'] ?> reps</span>
-          <?php endif; ?>
           <?php if ($e['notes']): ?>
           · <em><?= htmlspecialchars($e['notes']) ?></em>
           <?php endif; ?>
