@@ -328,4 +328,26 @@ function run_migrations(PDO $db): void {
             $db->exec("INSERT INTO _migrations (name) VALUES ('v2_cleanup')");
         }
     } catch (Exception $e) {}
+
+    // ── v2_reseed: wipe everything + reseed plan for admin ───────────
+    try {
+        $done = $db->query("SELECT 1 FROM _migrations WHERE name='v2_reseed'")->fetch();
+        if (!$done) {
+            // Wipe all user data
+            $db->exec("SET FOREIGN_KEY_CHECKS=0");
+            $db->exec("TRUNCATE TABLE sets_log");
+            $db->exec("TRUNCATE TABLE sessions");
+            $db->exec("TRUNCATE TABLE plan_exercises");
+            $db->exec("TRUNCATE TABLE plan_days");
+            $db->exec("TRUNCATE TABLE plans");
+            $db->exec("TRUNCATE TABLE weight_log");
+            $db->exec("TRUNCATE TABLE shared_access");
+            $db->exec("SET FOREIGN_KEY_CHECKS=1");
+
+            // Delete seed_phase1 flag so it re-runs
+            $db->exec("DELETE FROM _migrations WHERE name='seed_phase1'");
+
+            $db->exec("INSERT INTO _migrations (name) VALUES ('v2_reseed')");
+        }
+    } catch (Exception $e) {}
 }
