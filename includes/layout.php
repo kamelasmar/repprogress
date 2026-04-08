@@ -1,6 +1,6 @@
 <?php
 function render_head(string $title, string $active = '', bool $auth_page = false, string $description = ''): void {
-    if (!$description) $description = 'Repprogress — Track every rep, build every plan, see real progress. Workout tracker with training plans, exercise library, and body composition tracking.';
+    if (!$description) $description = 'Track every rep, build every plan, see real progress. Workout tracker with training plans, exercise library, and body composition tracking.';
     $pages = [
         'index'    => ['Dashboard',   'index.php',    '&#128202;'],
         'workout'  => ['Workout',     'workout.php',  '&#128170;'],

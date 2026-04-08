@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-render_head('Sign In | Repprogress', '', true);
+render_head('Sign In', '', true);
 ?>
 
 <div class="auth-box">

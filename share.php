@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $logged_in) {
 $total_exercises = 0;
 foreach ($exercises_by_day as $exs) $total_exercises += count($exs);
 
-render_head(htmlspecialchars($plan['name']) . ' — Shared Training Plan', '', false, htmlspecialchars($plan['name']) . ' — ' . count($days) . '-day training plan with ' . $total_exercises . ' exercises. Import it to your Repprogress account.');
+render_head(htmlspecialchars($plan['name']) . ' | Shared Training Plan', '', false, htmlspecialchars($plan['name']) . ' | ' . count($days) . '-day training plan with ' . $total_exercises . ' exercises. Import it to your account.');
 ?>
 
 <div class="mb-6">
