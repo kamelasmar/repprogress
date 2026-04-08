@@ -112,22 +112,22 @@ render_head('Plans', 'plans');
     ? min(100, round(((time()-strtotime($p['start_date']))/604800) / $p['weeks_duration'] * 100))
     : 0;
 ?>
-<div class="card" style="margin-bottom:1rem;<?= $p['is_active'] ? 'border:2px solid var(--accent)' : '' ?>">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-    <div style="flex:1">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-        <span style="font-size:17px;font-weight:700;color:var(--text)"><?= htmlspecialchars($p['name']) ?></span>
+<div class="card mb-3 <?= $p['is_active'] ? 'border-2 border-accent' : '' ?>">
+  <div class="flex justify-between items-start flex-wrap gap-3">
+    <div class="flex-1">
+      <div class="flex items-center gap-2.5 flex-wrap mb-1">
+        <span class="text-[17px] font-bold text-[var(--text)]"><?= htmlspecialchars($p['name']) ?></span>
         <?php if ($p['is_active']): ?>
-        <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">● ACTIVE</span>
+        <span class="bg-accent text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">● ACTIVE</span>
         <?php else: ?>
-        <span style="background:var(--bg);color:var(--muted);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid var(--border)">Inactive</span>
+        <span class="bg-bg text-muted text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-border-app">Inactive</span>
         <?php endif; ?>
-        <span style="font-size:12px;color:var(--muted)">Phase <?= $p['phase_number'] ?> · <?= $p['weeks_duration'] ?> weeks</span>
+        <span class="text-xs text-muted">Phase <?= $p['phase_number'] ?> · <?= $p['weeks_duration'] ?> weeks</span>
       </div>
       <?php if ($p['description']): ?>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;line-height:1.5"><?= htmlspecialchars($p['description']) ?></div>
+      <div class="text-[13px] text-muted mb-2 leading-relaxed"><?= htmlspecialchars($p['description']) ?></div>
       <?php endif; ?>
-      <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);flex-wrap:wrap">
+      <div class="flex gap-4 text-xs text-muted flex-wrap">
         <?php if ($p['start_date']): ?>
         <span>📅 <?= date('M j, Y', strtotime($p['start_date'])) ?> → <?= $p['end_date'] ? date('M j, Y',strtotime($p['end_date'])) : '?' ?></span>
         <span>📊 Week <?= $week_num ?> of <?= $p['weeks_duration'] ?><?= is_numeric($weeks_left) ? " · $weeks_left weeks left" : '' ?></span>
@@ -136,19 +136,19 @@ render_head('Plans', 'plans');
       </div>
 
       <?php if ($p['is_active'] && $p['weeks_duration']): ?>
-      <div style="margin-top:10px">
-        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-          <div style="height:100%;width:<?= $progress_pct ?>%;background:var(--accent);border-radius:3px;transition:width 0.3s"></div>
+      <div class="mt-2.5">
+        <div class="h-1.5 bg-[var(--border)] rounded-sm overflow-hidden">
+          <div class="h-full bg-accent rounded-sm transition-all duration-300" style="width:<?= $progress_pct ?>%"></div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px"><?= $progress_pct ?>% through this plan</div>
+        <div class="text-[11px] text-muted mt-1"><?= $progress_pct ?>% through this plan</div>
       </div>
       <?php endif; ?>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+    <div class="flex flex-col gap-1.5 items-end">
       <a href="plan_builder.php?plan_id=<?= $p['id'] ?>" class="btn btn-ghost btn-sm">✏️ Edit Plan</a>
       <?php if (!$p['is_active']): ?>
-      <form method="post" style="display:inline">
+      <form method="post" class="inline">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="activate">
         <input type="hidden" name="plan_id" value="<?= $p['id'] ?>">
@@ -156,7 +156,7 @@ render_head('Plans', 'plans');
       </form>
       <?php endif; ?>
       <?php if (!$p['is_active'] && !$p['session_count']): ?>
-      <form method="post" style="display:inline" onsubmit="return confirm('Delete this plan?')">
+      <form method="post" class="inline" x-data x-on:submit="if (!confirm('Delete this plan?')) $event.preventDefault()">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="delete">
         <input type="hidden" name="plan_id" value="<?= $p['id'] ?>">
@@ -173,29 +173,31 @@ render_head('Plans', 'plans');
 <?php endif; ?>
 
 <!-- ── Create / Clone ─────────────────────────────────────────────────────── -->
-<div class="grid-2" style="margin-top:1.5rem">
+<div class="grid-2 mt-6">
 
   <!-- New plan — choose type -->
-  <div class="card">
+  <div class="card" x-data="{ mode: '<?= openai_api_key_configured() ? 'choose' : 'form' ?>' }">
     <div class="card-title">Create New Plan</div>
 
     <?php if (openai_api_key_configured()): ?>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Choose how to start your new plan:</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
-      <button type="button" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal" onclick="document.getElementById('blank-form').style.display='block';">
-        <span style="font-size:20px;display:block;margin-bottom:4px">&#128221;</span>
-        <span style="font-weight:700;display:block">Blank Plan</span>
-        <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Start from scratch</span>
-      </button>
-      <a href="ai_builder.php" class="btn btn-ghost" style="padding:14px;flex-direction:column;justify-content:center;text-align:center;height:auto;white-space:normal;text-decoration:none">
-        <span style="font-size:20px;display:block;margin-bottom:4px">&#129302;</span>
-        <span style="font-weight:700;display:block">AI Generated</span>
-        <span style="font-size:12px;color:var(--muted);display:block;margin-top:2px">Answer questions, get a plan</span>
-      </a>
+    <div x-show="mode === 'choose'">
+      <p class="text-[13px] text-muted mb-4 leading-relaxed">Choose how to start your new plan:</p>
+      <div class="grid grid-cols-2 gap-2.5 mb-5">
+        <button type="button" class="btn btn-ghost flex flex-col items-center justify-center p-3.5 h-auto whitespace-normal text-center" x-on:click="mode = 'form'">
+          <span class="text-xl block mb-1">&#128221;</span>
+          <span class="font-bold block">Blank Plan</span>
+          <span class="text-xs text-muted block mt-0.5">Start from scratch</span>
+        </button>
+        <a href="ai_builder.php" class="btn btn-ghost flex flex-col items-center justify-center p-3.5 h-auto whitespace-normal text-center no-underline">
+          <span class="text-xl block mb-1">&#129302;</span>
+          <span class="font-bold block">AI Generated</span>
+          <span class="text-xs text-muted block mt-0.5">Answer questions, get a plan</span>
+        </a>
+      </div>
     </div>
     <?php endif; ?>
 
-    <div id="blank-form" <?= openai_api_key_configured() ? 'style="display:none"' : '' ?>>
+    <div x-show="mode === 'form'" x-transition>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="create">
@@ -238,7 +240,7 @@ render_head('Plans', 'plans');
   <div class="card">
     <div class="card-title">Clone from Existing Plan</div>
     <?php if ($plans): ?>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.5">Copies all days and exercises from the source plan. Then customise in the builder — add, remove or swap exercises without touching your historical data.</p>
+    <p class="text-[13px] text-muted mb-4 leading-relaxed">Copies all days and exercises from the source plan. Then customise in the builder — add, remove or swap exercises without touching your historical data.</p>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="clone">
@@ -274,8 +276,8 @@ render_head('Plans', 'plans');
   </div>
 </div>
 
-<div class="info-box" style="margin-top:1rem">
-  <strong style="color:var(--text)">How it works:</strong>
+<div class="info-box mt-4">
+  <strong class="text-[var(--text)]">How it works:</strong>
   When you activate a new plan, all future sessions are logged under it. Old sessions remain permanently linked to the plan they were logged under — nothing is ever deleted.
   You can view history filtered by plan on the dashboard and exercise detail pages.
 </div>
