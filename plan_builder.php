@@ -127,35 +127,8 @@ $sections = ['Cardio Warm-Up','Mobility','Stretching','Core Block A','Activation
 render_head('Plan Builder — '.$plan['name'], 'plans');
 ?>
 <script>
-document.addEventListener('alpine:init', () => {
-  Alpine.data('picker', () => ({
-    exercises: <?= json_encode(array_values($all_ex)) ?>,
-    categories: [],
-    category: '',
-    search: '',
-    selectedId: '',
-    selectedName: '',
-    section: 'Main Work',
-    sectionOrder: 6,
-    sectionOrders: <?= json_encode($section_orders) ?>,
-    filtered: [],
-    init() {
-      this.categories = [...new Set(this.exercises.map(e => e.muscle_group))].sort();
-      this.updateFiltered();
-      this.$watch('category', () => this.updateFiltered());
-      this.$watch('search', () => this.updateFiltered());
-    },
-    updateFiltered() {
-      this.filtered = this.exercises.filter(e => {
-        const matchCat = !this.category || e.muscle_group === this.category;
-        const matchSearch = !this.search || e.name.toLowerCase().includes(this.search.toLowerCase());
-        return matchCat && matchSearch;
-      });
-    },
-    selectExercise(ex) { this.selectedId = String(ex.id); this.selectedName = ex.name; },
-    clearSelection() { this.selectedId = ''; this.selectedName = ''; this.search = ''; }
-  }));
-});
+window.__exData = <?= json_encode(array_values($all_ex)) ?>;
+window.__secOrders = <?= json_encode($section_orders) ?>;
 </script>
 
 <div class="flex items-center gap-3 mb-5 flex-wrap">
@@ -189,10 +162,9 @@ document.addEventListener('alpine:init', () => {
   <?php endforeach; ?>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+<div class="max-w-[720px]">
 
-<!-- Left: current day exercises -->
-<div>
+<!-- Exercises -->
   <!-- Day header config (collapsible) -->
   <?php if ($day_config): ?>
   <div class="card mb-5" x-data="{ open: false }">
@@ -331,18 +303,39 @@ document.addEventListener('alpine:init', () => {
     <?php else: ?>
     <div class="empty">
       <div class="empty-icon">💪</div>
-      <p>This day is empty. Start building your workout by picking exercises from the panel.</p>
-      <?php if (openai_api_key_configured()): ?>
-      <a href="ai_builder.php" class="btn btn-ghost btn-sm mt-2">Or generate a plan with AI →</a>
-      <?php endif; ?>
+      <p>This day is empty. Add exercises below to start building.</p>
     </div>
     <?php endif; ?>
   </div>
-</div>
 
-<!-- Right: add exercise panel -->
-<div>
-  <div class="card sticky top-4" x-data="picker">
+<!-- Add exercise panel -->
+  <div class="card mt-5" x-data="{
+    exercises: window.__exData || [],
+    categories: [],
+    category: '',
+    search: '',
+    selectedId: '',
+    selectedName: '',
+    section: 'Main Work',
+    sectionOrder: 6,
+    sectionOrders: window.__secOrders || {},
+    filtered: [],
+    init() {
+      this.categories = [...new Set(this.exercises.map(e => e.muscle_group))].sort();
+      this.doFilter();
+      this.$watch('category', () => this.doFilter());
+      this.$watch('search', () => this.doFilter());
+    },
+    doFilter() {
+      this.filtered = this.exercises.filter(e => {
+        const matchCat = !this.category || e.muscle_group === this.category;
+        const matchSearch = !this.search || e.name.toLowerCase().includes(this.search.toLowerCase());
+        return matchCat && matchSearch;
+      });
+    },
+    selectExercise(ex) { this.selectedId = String(ex.id); this.selectedName = ex.name; },
+    clearSelection() { this.selectedId = ''; this.selectedName = ''; this.search = ''; this.category = ''; this.doFilter(); }
+  }">
     <div class="card-title">Add Exercise</div>
     <form method="post" x-ref="addForm">
       <?= csrf_field() ?>
@@ -445,7 +438,6 @@ document.addEventListener('alpine:init', () => {
       </div>
     </form>
   </div>
-</div>
 </div>
 
 <script>
