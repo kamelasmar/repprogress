@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                       $_POST['duration_sec'] ?: null, $_POST['side'] ?: 'both',
                       $_POST['notes'] ?: null, $_POST['difficulty'] ?: null, $uid]);
         flash('Set logged!');
-        header("Location: workout.php?day=".urlencode($active_day)."&logged=".$_POST['exercise_id']."#ex-".$_POST['exercise_id']); exit;
+        header("Location: workout.php?day=".urlencode($active_day)."#ex-".$_POST['exercise_id']); exit;
     }
 
     if ($action === 'delete_set') {
@@ -258,16 +258,7 @@ render_head('Workout', 'workout');
     }
 ?>
 <div id="ex-<?= $ex_id ?>" class="card mb-2.5" style="border-left:3px solid <?= $col ?>"
-     x-data="{
-       timer: 0, timerInterval: null, showTimer: false, restSec: 30, difficulty: '',
-       init() {
-         if (new URLSearchParams(window.location.search).get('logged') === '<?= $ex_id ?>') {
-           this.showTimer = true;
-           this.timer = this.restSec;
-           this.timerInterval = setInterval(() => { this.timer--; if (this.timer <= 0) { clearInterval(this.timerInterval); this.showTimer = false; } }, 1000);
-         }
-       }
-     }">
+     x-data="{ difficulty: '' }">
   <!-- Exercise header -->
   <div class="flex justify-between items-start gap-2 mb-2">
     <div>
@@ -302,18 +293,6 @@ render_head('Workout', 'workout');
   <?php if ($e['coach_tip']): ?>
   <div class="coach-tip mb-2.5"><?= htmlspecialchars($e['coach_tip']) ?></div>
   <?php endif; ?>
-
-  <!-- Rest timer -->
-  <div x-show="showTimer" x-transition class="bg-accent-dim border border-accent rounded-app px-4 py-3 mb-3 text-center" x-cloak>
-    <div class="text-2xl font-bold text-accent-text" x-text="'0:' + String(timer).padStart(2, '0')"></div>
-    <div class="flex justify-center gap-2 mt-2">
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=30; timer=30; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">30s</button>
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=60; timer=60; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">60s</button>
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=90; timer=90; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">90s</button>
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="restSec=120; timer=120; clearInterval(timerInterval); timerInterval=setInterval(()=>{timer--;if(timer<=0){clearInterval(timerInterval);showTimer=false}},1000)">120s</button>
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" x-on:click="clearInterval(timerInterval); showTimer=false">Skip</button>
-    </div>
-  </div>
 
   <!-- Logged sets -->
   <?php if ($ex_sets): ?>
