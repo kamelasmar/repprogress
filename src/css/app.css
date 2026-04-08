@@ -1,4 +1,5 @@
-@import "tailwindcss";
+@import "tailwindcss/utilities";
+@import "tailwindcss/theme";
 
 /* ── Theme variables — matches existing layout.php dark theme ── */
 :root {
