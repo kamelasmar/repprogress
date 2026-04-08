@@ -311,6 +311,9 @@ window.__muscleGroups = <?= json_encode($muscle_groups) ?>;
           <?php foreach ($pe_alts as $alt): ?>
           <span class="text-xs bg-bg3 px-2 py-0.5 rounded text-[var(--text)] inline-flex items-center gap-1">
             <?= htmlspecialchars($alt['name']) ?>
+            <?php if ($alt['youtube_url']): ?>
+            <a href="<?= htmlspecialchars($alt['youtube_url']) ?>" target="_blank" class="btn-yt" style="font-size:9px;padding:1px 5px">▶</a>
+            <?php endif; ?>
             <form method="post" class="inline"><input type="hidden" name="action" value="remove_alternative"><input type="hidden" name="alt_id" value="<?= $alt['id'] ?>"><input type="hidden" name="day_label" value="<?= $active_day ?>"><?= csrf_field() ?><button class="text-muted hover:text-red-text cursor-pointer" style="background:none;border:none;padding:0;font-size:11px">×</button></form>
           </span>
           <?php endforeach; ?>
